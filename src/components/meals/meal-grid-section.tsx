@@ -33,6 +33,7 @@ export default function MealGridSection({ sheetId }: { sheetId: string }) {
 
   const [defaultMeals, setDefaultMeals] = useState<DefaultMealMap>({})
   const [loading, setLoading] = useState(true)
+  const [gridError, setGridError] = useState<string | null>(null)
   const [canEdit, setCanEdit] = useState(false)
   const [savingCell, setSavingCell] = useState<string | null>(null)
   const [editingCell, setEditingCell] = useState<{ day: number; memberId: string } | null>(null)
@@ -56,6 +57,9 @@ export default function MealGridSection({ sheetId }: { sheetId: string }) {
         map.forEach((value, key) => { obj[key] = value })
         setDefaultMeals(obj)
       }
+      setGridError(null)
+    } else if (gridResult.error) {
+      setGridError(gridResult.error)
     }
     if (guestResult.guestMeals) setGuestMeals(guestResult.guestMeals)
   }
@@ -76,6 +80,8 @@ export default function MealGridSection({ sheetId }: { sheetId: string }) {
           map.forEach((value, key) => { obj[key] = value })
           setDefaultMeals(obj)
         }
+      } else if (gridResult.error) {
+        setGridError(gridResult.error)
       }
       if (guestResult.guestMeals) setGuestMeals(guestResult.guestMeals)
       setLoading(false)
@@ -458,7 +464,11 @@ export default function MealGridSection({ sheetId }: { sheetId: string }) {
   if (members.length === 0) {
     return (
       <div className="py-8 text-center text-sm text-muted-foreground">
-        No active members to display meal grid.
+        {gridError ? (
+          <p className="text-destructive">{gridError}</p>
+        ) : (
+          <p>No active members to display meal grid.</p>
+        )}
       </div>
     )
   }
