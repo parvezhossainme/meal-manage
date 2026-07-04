@@ -1,0 +1,290 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("MEMBER")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  announcements Announcement[]
+  auditLogs     AuditLog[]
+  expenses      Expense[]
+  fundTxns      FundTransaction[]
+  notifications Notification[]
+
+  member Member?
+}
+
+model Member {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  name      String
+  phone     String?
+  email     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  openingBalances OpeningBalance[]
+  mealEntries     MealEntryItem[]
+  expenses        Expense[]         @relation("PaidByMember")
+  fundTransactions  FundTransaction[]
+  shopping          Shopping[]
+  defaultMeals      DefaultMealEntry[]
+  carryForwardHistories CarryForwardHistory[]
+}
+
+model MonthlySheet {
+  id            String   @id @default(cuid())
+  month         Int
+  year          Int
+  label         String
+  locked        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  openingBalances OpeningBalance[]
+  mealEntries     MealEntry[]
+  mealEntryItems  MealEntryItem[]
+  defaultMeals    DefaultMealEntry[]
+  guestMeals      GuestMeal[]
+  expenses        Expense[]
+  fundTxns        FundTransaction[]
+  shopping        Shopping[]
+  dailyNotes      DailyNote[]
+  extraCosts      ExtraCost[]
+  carryForwardFrom CarryForwardHistory[] @relation("FromSheet")
+  carryForwardTo   CarryForwardHistory[] @relation("ToSheet")
+
+  @@unique([month, year])
+}
+
+model DefaultMealEntry {
+  id             String   @id @default(cuid())
+  monthlySheetId String
+  memberId       String
+  count          Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  monthlySheet MonthlySheet @relation(fields: [monthlySheetId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([monthlySheetId, memberId])
+}
+
+model OpeningBalance {
+  id              String   @id @default(cuid())
+  monthlySheetId  String
+  memberId        String
+  amount          Float    @default(0)
+  carriedForward  Boolean  @default(false)
+  sourceSheetId   String?
+  createdAt       DateTime @default(now())
+
+  monthlySheet MonthlySheet @relation(fields: [monthlySheetId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([monthlySheetId, memberId])
+}
+
+model MealEntry {
+  id             String   @id @default(cuid())
+  monthlySheetId String
+  date           DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  monthlySheet MonthlySheet   @relation(fields: [monthlySheetId], references: [id], onDelete: Cascade)
+  items        MealEntryItem[]
+
+  @@unique([monthlySheetId, date])
+}
+
+model MealEntryItem {
+  id              String   @id @default(cuid())
+  mealEntryId     String
+  memberId        String
+  monthlySheetId  String?
+  count           Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  mealEntry    MealEntry    @relation(fields: [mealEntryId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  monthlySheet MonthlySheet? @relation(fields: [monthlySheetId], references: [id])
+
+  @@unique([mealEntryId, memberId])
+}
+
+model GuestMeal {
+  id             String   @id @default(cuid())
+  monthlySheetId String
+  date           DateTime
+  guestName      String
+  hostedBy       String
+  mealCount      Float    @default(1)
+  remarks        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  monthlySheet MonthlySheet @relation(fields: [monthlySheetId], references: [id], onDelete: Cascade)
+}
+
+model FundTransaction {
+  id              String   @id @default(cuid())
+  monthlySheetId  String
+  memberId        String
+  amount          Float
+  type            String   @default("Deposit")
+  paymentMethod   String?
+  reference       String?
+  remarks         String?
+  date            DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  monthlySheet MonthlySheet @relation(fields: [monthlySheetId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id])
+  recordedBy   User         @relation(fields: [recordedById], references: [id], onDelete: Cascade)
+  recordedById String
+}
+
+model Shopping {
+  id             String   @id @default(cuid())
+  monthlySheetId String
+  date           DateTime @default(now())
+  purchasedById  String
+  totalCost      Float
+  details        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  monthlySheet MonthlySheet @relation(fields: [monthlySheetId], references: [id], onDelete: Cascade)
+  purchasedBy  Member       @relation(fields: [purchasedById], references: [id])
+}
+
+model ExtraCost {
+  id             String   @id @default(cuid())
+  monthlySheetId String
+  date           DateTime
+  description    String
+  totalCost      Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  monthlySheet MonthlySheet @relation(fields: [monthlySheetId], references: [id], onDelete: Cascade)
+}
+
+model DailyNote {
+  id             String   @id @default(cuid())
+  monthlySheetId String
+  date           DateTime
+  note           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  monthlySheet MonthlySheet @relation(fields: [monthlySheetId], references: [id], onDelete: Cascade)
+
+  @@unique([monthlySheetId, date])
+}
+
+model CarryForwardHistory {
+  id              String   @id @default(cuid())
+  fromSheetId     String
+  toSheetId       String
+  memberId        String
+  importedBalance Float    @default(0)
+  adjustment      Float    @default(0)
+  finalBalance    Float    @default(0)
+  createdAt       DateTime @default(now())
+
+  fromSheet MonthlySheet @relation("FromSheet", fields: [fromSheetId], references: [id])
+  toSheet   MonthlySheet @relation("ToSheet", fields: [toSheetId], references: [id])
+  member    Member       @relation(fields: [memberId], references: [id])
+}
+
+model ExpenseCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  expenses Expense[]
+}
+
+model Expense {
+  id              String   @id @default(cuid())
+  monthlySheetId  String
+  title           String
+  categoryId      String
+  amount          Float
+  paidByMemberId  String?
+  vendor          String?
+  receipt         String?
+  remarks         String?
+  date            DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  monthlySheet MonthlySheet    @relation(fields: [monthlySheetId], references: [id], onDelete: Cascade)
+  category     ExpenseCategory @relation(fields: [categoryId], references: [id])
+  paidBy       Member?         @relation("PaidByMember", fields: [paidByMemberId], references: [id])
+  recordedBy   User            @relation(fields: [recordedById], references: [id])
+  recordedById String
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdById String
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String?
+  oldValue  String?
+  newValue  String?
+  reason    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
