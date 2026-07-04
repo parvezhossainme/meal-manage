@@ -47,7 +47,7 @@ export async function getMealGridAction(sheetId: string) {
       const defaultMeals = await prisma.defaultMealEntry.findMany({
         where: { monthlySheetId: sheetId },
       })
-      defaultMap = new Map(defaultMeals.map((d) => [d.memberId, d.count]))
+      defaultMap = new Map(defaultMeals.map((d: { memberId: string; count: number }) => [d.memberId, d.count]))
     } catch (e) {
       // Table may not exist yet (migration not applied) - return empty map
       // P2021: The table does not exist in the database
@@ -72,7 +72,8 @@ export async function getMealGridAction(sheetId: string) {
       let total = 0
 
       for (const member of members) {
-        const item = (entry?.items as Array<{ memberId: string; count: number }>).find((i) => i.memberId === member.id)
+        const entryItems = entry?.items ?? []
+        const item = entryItems.find((i: { memberId: string; count: number }) => i.memberId === member.id)
         const count = item ? item.count : null
         items[member.id] = count
         total += count ?? 0
