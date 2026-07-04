@@ -11,3 +11,12 @@ export const prisma =
   })
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
+
+export async function shouldCountDefaultMeals(): Promise<boolean> {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: "countDefaultMeals" } })
+    return setting?.value !== "false"
+  } catch {
+    return true
+  }
+}

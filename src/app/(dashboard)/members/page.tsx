@@ -1,12 +1,14 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import Link from "next/link"
 import {
   getMembersAction,
   createMemberAction,
   updateMemberAction,
   toggleMemberActiveAction,
 } from "@/actions/members"
+import { getCurrentUserAction } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,7 +34,7 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card"
-import { Plus, Pencil, Search, Loader2 } from "lucide-react"
+import { Plus, Pencil, Search, Loader2, ExternalLink } from "lucide-react"
 import { toast } from "sonner"
 
 interface MemberItem {
@@ -54,6 +56,15 @@ export default function MembersPage() {
   const [formPhone, setFormPhone] = useState("")
   const [formEmail, setFormEmail] = useState("")
   const [saving, setSaving] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    getCurrentUserAction().then((result) => {
+      if (result.user && result.user.role !== "MEMBER") {
+        setIsAdmin(true)
+      }
+    })
+  }, [])
 
   const loadMembers = useCallback(async () => {
     setLoading(true)

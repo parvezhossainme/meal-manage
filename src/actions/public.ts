@@ -1,8 +1,17 @@
 "use server"
 
-import { prisma } from "@/lib/db"
+import { prisma, shouldCountDefaultMeals } from "@/lib/db"
 
 const MAIN_CATEGORY_NAME = "Main"
+
+function getDaysInMonth(month: number, year: number): number {
+  return new Date(year, month, 0).getDate()
+}
+
+function dateToKey(date: Date | string): string {
+  const d = new Date(date)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
 
 export async function getPublicDashboardAction() {
   try {
@@ -11,7 +20,7 @@ export async function getPublicDashboardAction() {
     })
 
     if (!sheet) {
-      return { stats: null }
+      return { stats: null, grid: null, shopping: null, extraCosts: null, funds: null }
     }
 
     const activeMembers = await prisma.member.findMany({
@@ -31,18 +40,27 @@ export async function getPublicDashboardAction() {
 
     const totalMeals = totalMemberMeals + totalGuestMeals
 
+    const countDefaults = await shouldCountDefaultMeals()
+    const calcDefaultMeals = countDefaults
+      ? await prisma.defaultMealEntry.findMany({ where: { monthlySheetId: sheet.id } })
+      : []
+    const totalDefaultMeals = calcDefaultMeals.reduce((sum, d) => sum + d.count, 0)
+    const adjustedTotalMeals = totalMeals + totalDefaultMeals
+
     const expenses = await prisma.expense.findMany({
       where: { monthlySheetId: sheet.id },
       include: { category: true },
     })
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
 
-    const mealRate = totalMeals > 0 ? Math.round((totalExpenses / totalMeals) * 100) / 100 : 0
+    const mealRate = adjustedTotalMeals > 0 ? Math.round((totalExpenses / adjustedTotalMeals) * 100) / 100 : 0
 
-    const funds = await prisma.fundTransaction.findMany({
+    const fundTxns = await prisma.fundTransaction.findMany({
       where: { monthlySheetId: sheet.id },
+      include: { member: true },
+      orderBy: { date: "desc" },
     })
-    const totalFunds = funds.reduce((sum, f) => sum + f.amount, 0)
+    const totalFunds = fundTxns.reduce((sum, f) => sum + f.amount, 0)
 
     const openingBalances = await prisma.openingBalance.findMany({
       where: { monthlySheetId: sheet.id },
@@ -61,6 +79,7 @@ export async function getPublicDashboardAction() {
 
     const extraCostEntries = await prisma.extraCost.findMany({
       where: { monthlySheetId: sheet.id },
+      orderBy: { date: "desc" },
     })
     const totalExtraCostEntries = extraCostEntries.reduce((sum, e) => sum + e.totalCost, 0)
     const extraCostPerMemberFromEntries = activeMembers.length > 0
@@ -74,12 +93,16 @@ export async function getPublicDashboardAction() {
       expenseByCategory[catName] = (expenseByCategory[catName] || 0) + e.amount
     }
 
+    const calcDefaultMap = new Map(calcDefaultMeals.map((d: { memberId: string; count: number }) => [d.memberId, d.count]))
+
     const memberResults = activeMembers.map((member) => {
       const memberItems = mealEntryItems.filter((i) => i.memberId === member.id)
       const memberMeals = memberItems.reduce((sum, i) => sum + i.count, 0)
-      const mealCost = Math.round(memberMeals * mealRate * 100) / 100
+      const memberDefaults = calcDefaultMap.get(member.id) || 0
+      const adjustedMemberMeals = memberMeals + memberDefaults
+      const mealCost = Math.round(adjustedMemberMeals * mealRate * 100) / 100
       const openingBalance = openingBalances.find((ob) => ob.memberId === member.id)?.amount || 0
-      const deposits = funds.filter((f) => f.memberId === member.id).reduce((sum, f) => sum + f.amount, 0)
+      const deposits = fundTxns.filter((f) => f.memberId === member.id).reduce((sum, f) => sum + f.amount, 0)
       const totalCost = Math.round((mealCost + combinedExtraCostPerMember) * 100) / 100
       const balance = Math.round((openingBalance + deposits - totalCost) * 100) / 100
 
@@ -87,7 +110,7 @@ export async function getPublicDashboardAction() {
         memberId: member.id,
         memberName: member.name,
         openingBalance,
-        totalMeals: memberMeals,
+        totalMeals: adjustedMemberMeals,
         mealCost,
         extraCost: extraCostPerMember,
         extraCostEntries: extraCostPerMemberFromEntries,
@@ -99,6 +122,65 @@ export async function getPublicDashboardAction() {
     })
 
     const outstandingBalance = Math.round((totalOpening + totalFunds - totalExpenses - totalExtraCostEntries) * 100) / 100
+
+    // --- Meal Grid ---
+    const days = getDaysInMonth(sheet.month, sheet.year)
+    const entries = await prisma.mealEntry.findMany({
+      where: { monthlySheetId: sheet.id },
+      include: { items: true },
+      orderBy: { date: "asc" },
+    })
+
+    const defaultMeals = await prisma.defaultMealEntry.findMany({
+      where: { monthlySheetId: sheet.id },
+    })
+    const defaultMap = new Map(defaultMeals.map((d: { memberId: string; count: number }) => [d.memberId, d.count]))
+
+    const entryMap = new Map<string, typeof entries[0]>()
+    for (const entry of entries) {
+      entryMap.set(dateToKey(entry.date), entry)
+    }
+
+    interface GridItem {
+      date: string
+      day: number
+      dayName: string
+      items: Record<string, number | null>
+      total: number
+    }
+
+    const grid: GridItem[] = []
+    for (let day = 1; day <= days; day++) {
+      const date = new Date(sheet.year, sheet.month - 1, day)
+      const key = dateToKey(date)
+      const entry = entryMap.get(key)
+
+      const items: Record<string, number | null> = {}
+      let total = 0
+
+      for (const member of activeMembers) {
+        const entryItems = entry?.items ?? []
+        const item = entryItems.find((i: { memberId: string; count: number }) => i.memberId === member.id)
+        const count = item ? item.count : null
+        items[member.id] = count
+        total += count ?? 0
+      }
+
+      grid.push({
+        date: date.toISOString(),
+        day,
+        dayName: date.toLocaleDateString("en-US", { weekday: "short" }),
+        items,
+        total,
+      })
+    }
+
+    // --- Shopping / Bazar ---
+    const shopping = await prisma.shopping.findMany({
+      where: { monthlySheetId: sheet.id },
+      include: { purchasedBy: true },
+      orderBy: { date: "desc" },
+    })
 
     return {
       stats: {
@@ -116,8 +198,14 @@ export async function getPublicDashboardAction() {
         expenseByCategory,
         members: memberResults,
       },
+      grid,
+      members: activeMembers.map((m) => ({ id: m.id, name: m.name })),
+      defaultMeals: Object.fromEntries(defaultMap),
+      shopping,
+      extraCosts: extraCostEntries,
+      funds: fundTxns,
     }
-    } catch (e) {
+  } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to fetch dashboard data" }
   }
 }

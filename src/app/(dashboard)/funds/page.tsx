@@ -318,14 +318,18 @@ export default function FundLedgerPage() {
               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider">
                 <th className="text-left font-medium px-4 py-3 w-8"></th>
                 <th className="text-left font-medium px-4 py-3">Member</th>
-                <th className="text-right font-medium px-4 py-3">Opening Balance</th>
-                <th className="text-right font-medium px-4 py-3">Total Fund</th>
+                <th className="text-right font-medium px-4 py-3">Deposit</th>
+                <th className="text-right font-medium px-4 py-3">Balance</th>
                 {isAdmin && <th className="text-right font-medium px-4 py-3 w-16">Actions</th>}
               </tr>
             </thead>
             <tbody>
-              {ledger.map((member) => {
+                  {ledger.map((member) => {
                 const open = expanded.has(member.memberId)
+                const deposits = member.transactions
+                  .filter((t) => t.type === "Deposit")
+                  .reduce((s, t) => s + t.amount, 0)
+                const balance = member.totalFund
                 return (
                   <Fragment key={member.memberId}>
                     <tr
@@ -340,17 +344,13 @@ export default function FundLedgerPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 font-medium">{member.memberName}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {member.openingBalance > 0 ? (
-                          <span className="text-blue-600 dark:text-blue-400">
-                            {formatCurrency(member.openingBalance)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                      <td className="px-4 py-3 text-right tabular-nums font-medium">
+                        {deposits > 0
+                          ? formatCurrency(deposits)
+                          : <span className="text-muted-foreground">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right font-semibold tabular-nums">
-                        {formatCurrency(member.totalFund)}
+                        {formatCurrency(balance)}
                       </td>
                       {isAdmin && (
                         <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>

@@ -11,6 +11,9 @@ import {
   TrendingUp,
   BarChart3,
   PieChart as PieChartIcon,
+  Banknote,
+  ArrowDownToLine,
+  Scale,
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import {
@@ -131,73 +134,58 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Monthly summary &mdash; <span className="font-medium">{data.currentMonthLabel}</span>
-          </p>
-        </div>
-      </div>
+      
 
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-3">
-            <CardTitle className="text-xs font-medium">Meal Rate</CardTitle>
-            <TrendingUp className="size-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Opening Balance</CardTitle>
+            <Banknote className="size-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl font-bold">{formatCurrency(data.mealRate)}</div>
-            <p className="text-xs text-muted-foreground">No Default ({data.totalMeals.toFixed(1)} meals)</p>
-            <div className="mt-1 text-base font-semibold text-muted-foreground">{formatCurrency(data.mealRateWithDefaults)}</div>
-            <p className="text-xs text-muted-foreground">With defaults ({data.totalMealsWithDefaults.toFixed(1)} meals)</p>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(data.totalOpening)}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-3">
-            <CardTitle className="text-xs font-medium">Total Expenses</CardTitle>
-            <DollarSign className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl font-bold">{formatCurrency(data.totalExpenses)}</div>
-            <p className="text-xs text-muted-foreground">This month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-3">
-            <CardTitle className="text-xs font-medium">Total Funds</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Funds</CardTitle>
             <PiggyBank className="size-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl font-bold">{formatCurrency(data.totalFunds)}</div>
-            <p className="text-xs text-muted-foreground">Collected</p>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(data.totalFunds)}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-3">
-            <CardTitle className="text-xs font-medium">Outstanding</CardTitle>
-            <TrendingUp className="size-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <ArrowDownToLine className="size-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className={`text-xl font-bold ${data.outstandingBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(data.totalExpenses)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Outstanding Balance</CardTitle>
+            <Scale className="size-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${data.outstandingBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
               {formatCurrency(data.outstandingBalance)}
             </div>
-            <p className="text-xs text-muted-foreground">Net balance</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Member Summary</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="sticky top-0 px-3 py-3 text-left font-medium text-muted-foreground">Member</th>
-                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Total Fund</th>
+                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Opening</th>
+                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Deposit</th>
                   <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Total Meals</th>
                   <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Meal Cost</th>
                   <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Extra Cost</th>
@@ -209,6 +197,7 @@ export default function DashboardPage() {
                 {data.members.map((member) => (
                   <tr key={member.memberId} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-3 font-medium">{member.memberName}</td>
+                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{formatCurrency(member.openingBalance)}</td>
                     <td className="px-3 py-3 text-right tabular-nums">{formatCurrency(member.deposits)}</td>
                     <td className="px-3 py-3 text-right tabular-nums">{member.totalMeals.toFixed(1)}</td>
                     <td className="px-3 py-3 text-right tabular-nums">{formatCurrency(member.mealCost)}</td>
@@ -223,6 +212,7 @@ export default function DashboardPage() {
               <tfoot>
                 <tr className="border-t bg-muted/30 font-medium">
                   <td className="px-3 py-3">Total</td>
+                  <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{formatCurrency(totalRow.openingBalance)}</td>
                   <td className="px-3 py-3 text-right tabular-nums">{formatCurrency(totalRow.deposits)}</td>
                   <td className="px-3 py-3 text-right tabular-nums">{totalRow.totalMeals.toFixed(1)}</td>
                   <td className="px-3 py-3 text-right tabular-nums">{formatCurrency(totalRow.mealCost)}</td>

@@ -52,9 +52,11 @@ const navItems: Record<string, NavItem[]> = {
     { href: "/extra-costs", label: "Extra Cost", icon: CircleDollarSign },
     { href: "/funds", label: "Funds", icon: PiggyBank },
     { href: "/reports", label: "Reports", icon: BarChart3 },
+    { href: "/settings", label: "Settings", icon: Settings },
   ],
   MEMBER: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/members", label: "Members", icon: Users },
     { href: "/reports", label: "My Reports", icon: FileText },
   ],
 }

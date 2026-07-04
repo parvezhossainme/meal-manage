@@ -1,6 +1,6 @@
 "use server"
 
-import { prisma } from "@/lib/db"
+import { prisma, shouldCountDefaultMeals } from "@/lib/db"
 import { requireAuth, requireAdmin } from "@/lib/auth"
 import { createMonthSchema } from "@/schemas/index"
 import { revalidatePath } from "next/cache"
@@ -91,7 +91,12 @@ export async function getPreviousMonthBalancesAction(memberIds: string[]) {
     const expenses = previousSheet.expenses.reduce((sum, e) => sum + e.amount, 0)
     const meals = previousSheet.mealEntryItems.reduce((sum, item) => sum + item.count, 0)
     const guestMeals = previousSheet.guestMeals.reduce((sum, g) => sum + g.mealCount, 0)
-    const totalMeals = meals + guestMeals
+    const countDefaults = await shouldCountDefaultMeals()
+    const defaultMeals = countDefaults
+      ? await prisma.defaultMealEntry.findMany({ where: { monthlySheetId: previousSheet.id } })
+      : []
+    const totalDefaultMeals = defaultMeals.reduce((sum, d) => sum + d.count, 0)
+    const totalMeals = meals + guestMeals + totalDefaultMeals
     const mealRate = totalMeals > 0 ? expenses / totalMeals : 0
 
     const mainCategory = await prisma.expenseCategory.findFirst({ where: { name: "Main" } })
@@ -105,11 +110,15 @@ export async function getPreviousMonthBalancesAction(memberIds: string[]) {
     const totalExtraCostEntries = extraCostEntries.reduce((sum, e) => sum + e.totalCost, 0)
     const extraCostPerMemberFromEntries = activeMemberCount > 0 ? totalExtraCostEntries / activeMemberCount : 0
 
+    const defaultMealMap = new Map(defaultMeals.map((d: { memberId: string; count: number }) => [d.memberId, d.count]))
+
     const balances = memberIds.map((memberId) => {
       const opening = previousSheet.openingBalances.find((ob) => ob.memberId === memberId)?.amount || 0
       const deposits = previousSheet.fundTxns.filter((f) => f.memberId === memberId).reduce((sum, f) => sum + f.amount, 0)
       const memberMeals = previousSheet.mealEntryItems.filter((i) => i.memberId === memberId).reduce((sum, i) => sum + i.count, 0)
-      const mealCost = memberMeals * mealRate
+      const memberDefaults = defaultMealMap.get(memberId) || 0
+      const adjustedMemberMeals = memberMeals + memberDefaults
+      const mealCost = adjustedMemberMeals * mealRate
       const totalCost = mealCost + extraCostPerMember + extraCostPerMemberFromEntries
       const balance = Math.round((opening + deposits - totalCost) * 100) / 100
 
@@ -200,9 +209,15 @@ export async function getCloseMonthSummaryAction(id: string) {
     const mealEntryItems = await prisma.mealEntryItem.findMany({ where: { monthlySheetId: id } })
     const totalMeals = mealEntryItems.reduce((sum, i) => sum + i.count, 0)
 
+    const countDefaults = await shouldCountDefaultMeals()
+    const defaultMeals = countDefaults
+      ? await prisma.defaultMealEntry.findMany({ where: { monthlySheetId: id } })
+      : []
+    const totalDefaultMeals = defaultMeals.reduce((sum, d) => sum + d.count, 0)
+
     const guestMeals = await prisma.guestMeal.findMany({ where: { monthlySheetId: id } })
     const totalGuestMeals = guestMeals.reduce((sum, g) => sum + g.mealCount, 0)
-    const combinedMeals = totalMeals + totalGuestMeals
+    const combinedMeals = totalMeals + totalGuestMeals + totalDefaultMeals
 
     const expenses = await prisma.expense.findMany({ where: { monthlySheetId: id } })
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
@@ -230,9 +245,13 @@ export async function getCloseMonthSummaryAction(id: string) {
     const extraCostPerMemberFromEntries = members.length > 0 ? Math.round((totalExtraCostEntries / members.length) * 100) / 100 : 0
     const combinedExtraCostPerMember = Math.round((extraCostPerMember + extraCostPerMemberFromEntries) * 100) / 100
 
+    const defaultMealMap = new Map(defaultMeals.map((d: { memberId: string; count: number }) => [d.memberId, d.count]))
+
     const memberSummaries = members.map((member) => {
       const memberMeals = mealEntryItems.filter((i) => i.memberId === member.id).reduce((sum, i) => sum + i.count, 0)
-      const mealCost = Math.round(memberMeals * mealRate * 100) / 100
+      const memberDefaults = defaultMealMap.get(member.id) || 0
+      const adjustedMemberMeals = memberMeals + memberDefaults
+      const mealCost = Math.round(adjustedMemberMeals * mealRate * 100) / 100
       const opening = openingBalances.find((ob) => ob.memberId === member.id)?.amount || 0
       const deposits = funds.filter((f) => f.memberId === member.id).reduce((sum, f) => sum + f.amount, 0)
       const totalCost = Math.round((mealCost + combinedExtraCostPerMember) * 100) / 100
@@ -246,7 +265,7 @@ export async function getCloseMonthSummaryAction(id: string) {
         sheetLabel: sheet.label,
         mealRate,
         totalExpenses: Math.round(totalExpenses * 100) / 100,
-        totalMeals,
+        totalMeals: Math.round(combinedMeals * 100) / 100,
         totalGuestMeals,
         combinedMeals,
         totalFunds: Math.round(totalFunds * 100) / 100,
@@ -325,6 +344,28 @@ export async function closeMonthAction(id: string, carryForwardNow: boolean) {
 
         const members = await prisma.member.findMany({ where: { active: true } })
 
+        const countDefaults = await shouldCountDefaultMeals()
+        const guestMeals = await tx.guestMeal.findMany({ where: { monthlySheetId: id } })
+        const totalGuestMeals = guestMeals.reduce((sum, g) => sum + g.mealCount, 0)
+        const expenses = await tx.expense.findMany({ where: { monthlySheetId: id } })
+        const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+        const allMealItems = await tx.mealEntryItem.findMany({ where: { monthlySheetId: id } })
+        const totalMemberMeals = allMealItems.reduce((sum, i) => sum + i.count, 0)
+        const allDefaultMealItems = await tx.defaultMealEntry.findMany({ where: { monthlySheetId: id } })
+        const totalMemberDefaults = allDefaultMealItems.reduce((sum, d) => sum + d.count, 0)
+        const totalAdjustedMemberMeals = totalMemberMeals + (countDefaults ? totalMemberDefaults : 0)
+        const combinedMeals = totalAdjustedMemberMeals + totalGuestMeals
+        const mealRate = combinedMeals > 0 ? totalExpenses / combinedMeals : 0
+        const mainCategory = await tx.expenseCategory.findFirst({ where: { name: "Main" } })
+        const memberCount = await prisma.member.count({ where: { active: true } })
+        const extraCostEntriesData = await tx.extraCost.findMany({ where: { monthlySheetId: id } })
+        const totalExtraCostEntries = extraCostEntriesData.reduce((sum, e) => sum + e.totalCost, 0)
+        const extraExpenses = mainCategory
+          ? expenses.filter((e) => e.categoryId !== mainCategory.id).reduce((sum, e) => sum + e.amount, 0)
+          : 0
+        const extraCostPerMember = memberCount > 0 ? extraExpenses / memberCount : 0
+        const extraCostPerMemberFromEntries = memberCount > 0 ? totalExtraCostEntries / memberCount : 0
+
         for (const member of members) {
           const existingOpening = await tx.openingBalance.findUnique({
             where: {
@@ -340,24 +381,10 @@ export async function closeMonthAction(id: string, carryForwardNow: boolean) {
           const deposits = fundTxns.reduce((sum, f) => sum + f.amount, 0)
           const mealItems = await tx.mealEntryItem.findMany({ where: { monthlySheetId: id, memberId: member.id } })
           const memberMeals = mealItems.reduce((sum, i) => sum + i.count, 0)
-          const guestMeals = await tx.guestMeal.findMany({ where: { monthlySheetId: id } })
-          const totalGuestMeals = guestMeals.reduce((sum, g) => sum + g.mealCount, 0)
-          const expenses = await tx.expense.findMany({ where: { monthlySheetId: id } })
-          const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
-          const combinedMeals = memberMeals + totalGuestMeals
-          const mealRate = combinedMeals > 0 ? totalExpenses / combinedMeals : 0
-          const mealCost = memberMeals * mealRate
-
-          const mainCategory = await tx.expenseCategory.findFirst({ where: { name: "Main" } })
-          const extraExpenses = mainCategory
-            ? expenses.filter((e) => e.categoryId !== mainCategory.id).reduce((sum, e) => sum + e.amount, 0)
-            : 0
-          const memberCount = await prisma.member.count({ where: { active: true } })
-          const extraCostPerMember = memberCount > 0 ? extraExpenses / memberCount : 0
-
-          const extraCostEntries = await tx.extraCost.findMany({ where: { monthlySheetId: id } })
-          const totalExtraCostEntries = extraCostEntries.reduce((sum, e) => sum + e.totalCost, 0)
-          const extraCostPerMemberFromEntries = memberCount > 0 ? totalExtraCostEntries / memberCount : 0
+          const defaultMealItems = await tx.defaultMealEntry.findMany({ where: { monthlySheetId: id, memberId: member.id } })
+          const memberDefaults = defaultMealItems.reduce((sum, d) => sum + d.count, 0)
+          const adjustedMemberMeals = memberMeals + (countDefaults ? memberDefaults : 0)
+          const mealCost = adjustedMemberMeals * mealRate
 
           const totalCost = mealCost + extraCostPerMember + extraCostPerMemberFromEntries
           const balance = Math.round((openingFromSheet + deposits - totalCost) * 100) / 100

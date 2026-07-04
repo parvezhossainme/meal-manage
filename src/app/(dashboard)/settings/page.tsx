@@ -48,7 +48,8 @@ import {
   TabsContent,
 } from "@/components/ui/tabs"
 import CreateMonthDialog from "@/components/sheets/create-month-dialog"
-import { Plus, Loader2, Save, Users, Settings2, Calendar } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Plus, Loader2, Save, Users, Settings2, Calendar, UtensilsCrossed } from "lucide-react"
 import { toast } from "sonner"
 import { formatDate } from "@/lib/utils"
 
@@ -281,6 +282,37 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="system" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <UtensilsCrossed className="size-4" />
+                Meal Settings
+              </CardTitle>
+              <CardDescription>Configure meal calculation preferences</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Loader2 className="mx-auto size-5 animate-spin" />
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Count Default Meals</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Include default meal counts in total meal calculations (affects meal rate, member balances, and carry-forward)
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.find((s) => s.key === "countDefaultMeals")?.value !== "false"}
+                    onCheckedChange={(checked: boolean) => {
+                      handleUpdateSetting("countDefaultMeals", checked ? "true" : "false")
+                    }}
+                    disabled={savingSettings["countDefaultMeals"]}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>System Settings</CardTitle>

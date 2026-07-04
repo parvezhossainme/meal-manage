@@ -1,9 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Menu, UtensilsCrossed } from "lucide-react"
+import Link from "next/link"
+import { Menu, Eye, UtensilsCrossed } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { UserNav } from "./UserNav"
+import { getSheetsAction } from "@/actions/sheets"
 import type { SessionUser } from "@/lib/auth"
 
 interface HeaderProps {
@@ -13,6 +15,7 @@ interface HeaderProps {
 
 export function Header({ user, onMenuClick }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false)
+  const [latestSheet, setLatestSheet] = useState<string | null>(null)
 
   useEffect(() => {
     function handleScroll() {
@@ -20,6 +23,14 @@ export function Header({ user, onMenuClick }: HeaderProps) {
     }
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  useEffect(() => {
+    getSheetsAction().then((result) => {
+      if (result.sheets && result.sheets.length > 0) {
+        setLatestSheet(result.sheets[0].label)
+      }
+    })
   }, [])
 
   return (
@@ -44,7 +55,21 @@ export function Header({ user, onMenuClick }: HeaderProps) {
         </span>
         <span>Meal Manage</span>
       </div>
+      {latestSheet && (
+        <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Latest month</span>
+          <span>&mdash;</span>
+          <span>{latestSheet}</span>
+        </div>
+      )}
       <div className="flex-1" />
+      <Link
+        href="/"
+        className="hidden sm:inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mr-2"
+      >
+        <Eye className="size-4" />
+        Public View
+      </Link>
       <UserNav user={user} />
     </header>
   )

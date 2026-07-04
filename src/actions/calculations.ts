@@ -1,6 +1,6 @@
 "use server"
 
-import { prisma } from "@/lib/db"
+import { prisma, shouldCountDefaultMeals } from "@/lib/db"
 import { requireAuth } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 
@@ -32,13 +32,20 @@ export async function calculateMonthlySummaryAction(sheetId: string) {
 
     const totalMeals = totalMemberMeals + totalGuestMeals
 
+    const countDefaults = await shouldCountDefaultMeals()
+    const defaultMeals = countDefaults
+      ? await prisma.defaultMealEntry.findMany({ where: { monthlySheetId: sheetId } })
+      : []
+    const totalDefaultMeals = defaultMeals.reduce((sum, d) => sum + d.count, 0)
+    const adjustedTotalMeals = totalMeals + totalDefaultMeals
+
     const expenses = await prisma.expense.findMany({
       where: { monthlySheetId: sheetId },
       include: { category: true },
     })
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
 
-    const mealRate = totalMeals > 0 ? Math.round((totalExpenses / totalMeals) * 100) / 100 : 0
+    const mealRate = adjustedTotalMeals > 0 ? Math.round((totalExpenses / adjustedTotalMeals) * 100) / 100 : 0
 
     const mainCategory = await prisma.expenseCategory.findFirst({
       where: { name: MAIN_CATEGORY_NAME },
@@ -73,11 +80,15 @@ export async function calculateMonthlySummaryAction(sheetId: string) {
 
     const combinedExtraCostPerMember = Math.round((extraCostPerMember + extraCostPerMemberFromEntries) * 100) / 100
 
+    const defaultMealMap = new Map(defaultMeals.map((d: { memberId: string; count: number }) => [d.memberId, d.count]))
+
     const memberResults = activeMembers.map((member) => {
       const memberItems = mealEntryItems.filter((i) => i.memberId === member.id)
       const memberMeals = memberItems.reduce((sum, i) => sum + i.count, 0)
+      const memberDefaults = defaultMealMap.get(member.id) || 0
+      const adjustedMemberMeals = memberMeals + memberDefaults
 
-      const mealCost = Math.round(memberMeals * mealRate * 100) / 100
+      const mealCost = Math.round(adjustedMemberMeals * mealRate * 100) / 100
 
       const openingBalance = openingBalances.find((ob) => ob.memberId === member.id)?.amount || 0
 
@@ -93,7 +104,7 @@ export async function calculateMonthlySummaryAction(sheetId: string) {
         memberId: member.id,
         memberName: member.name,
         openingBalance,
-        totalMeals: memberMeals,
+        totalMeals: adjustedMemberMeals,
         mealCost,
         extraCost: extraCostPerMember,
         extraCostEntries: extraCostPerMemberFromEntries,
@@ -105,7 +116,7 @@ export async function calculateMonthlySummaryAction(sheetId: string) {
     })
 
     const result = {
-      totalMeals: Math.round(totalMeals * 100) / 100,
+      totalMeals: Math.round(adjustedTotalMeals * 100) / 100,
       guestMeals: Math.round(totalGuestMeals * 100) / 100,
       totalExpenses: Math.round(totalExpenses * 100) / 100,
       totalFunds: Math.round(totalFunds * 100) / 100,
@@ -182,20 +193,22 @@ export async function getDashboardStatsAction(sheetId?: string) {
 
     const totalMeals = totalMemberMeals + totalGuestMeals
 
+    const countDefaults = await shouldCountDefaultMeals()
+    const calcDefaultMeals = countDefaults
+      ? await prisma.defaultMealEntry.findMany({ where: { monthlySheetId: sheet.id } })
+      : []
+    const totalDefaultMeals = calcDefaultMeals.reduce((sum, d) => sum + d.count, 0)
+    const adjustedTotalMeals = totalMeals + totalDefaultMeals
+
     const expenses = await prisma.expense.findMany({
       where: { monthlySheetId: sheet.id },
       include: { category: true },
     })
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
 
-    const defaultMeals = await prisma.defaultMealEntry.findMany({
-      where: { monthlySheetId: sheet.id },
-    })
-    const totalDefaultMeals = defaultMeals.reduce((sum, d) => sum + d.count, 0)
-    const totalMealsWithDefaults = totalMeals + totalDefaultMeals
-
-    const mealRate = totalMeals > 0 ? Math.round((totalExpenses / totalMeals) * 100) / 100 : 0
-    const mealRateWithDefaults = totalMealsWithDefaults > 0 ? Math.round((totalExpenses / totalMealsWithDefaults) * 100) / 100 : 0
+    const mealRate = adjustedTotalMeals > 0 ? Math.round((totalExpenses / adjustedTotalMeals) * 100) / 100 : 0
+    const mealRateWithDefaults = mealRate
+    const totalMealsWithDefaults = adjustedTotalMeals
 
     const funds = await prisma.fundTransaction.findMany({
       where: { monthlySheetId: sheet.id },
@@ -233,10 +246,14 @@ export async function getDashboardStatsAction(sheetId?: string) {
 
     const combinedExtraCostPerMember = Math.round((extraCostPerMember + extraCostPerMemberFromEntries) * 100) / 100
 
+    const calcDefaultMap = new Map(calcDefaultMeals.map((d: { memberId: string; count: number }) => [d.memberId, d.count]))
+
     const memberResults = activeMembers.map((member) => {
       const memberItems = mealEntryItems.filter((i) => i.memberId === member.id)
       const memberMeals = memberItems.reduce((sum, i) => sum + i.count, 0)
-      const mealCost = Math.round(memberMeals * mealRate * 100) / 100
+      const memberDefaults = calcDefaultMap.get(member.id) || 0
+      const adjustedMemberMeals = memberMeals + memberDefaults
+      const mealCost = Math.round(adjustedMemberMeals * mealRate * 100) / 100
       const openingBalance = openingBalances.find((ob) => ob.memberId === member.id)?.amount || 0
       const deposits = funds.filter((f) => f.memberId === member.id).reduce((sum, f) => sum + f.amount, 0)
       const totalCost = Math.round((mealCost + combinedExtraCostPerMember) * 100) / 100
@@ -246,7 +263,7 @@ export async function getDashboardStatsAction(sheetId?: string) {
         memberId: member.id,
         memberName: member.name,
         openingBalance,
-        totalMeals: memberMeals,
+        totalMeals: adjustedMemberMeals,
         mealCost,
         extraCost: extraCostPerMember,
         extraCostEntries: extraCostPerMemberFromEntries,
@@ -266,7 +283,7 @@ export async function getDashboardStatsAction(sheetId?: string) {
       locked: sheet.locked,
       mealRate,
       mealRateWithDefaults,
-      totalMeals,
+      totalMeals: Math.round(adjustedTotalMeals * 100) / 100,
       totalDefaultMeals,
       totalMealsWithDefaults,
       totalExpenses: Math.round(totalExpenses * 100) / 100,
