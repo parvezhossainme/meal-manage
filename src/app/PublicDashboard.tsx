@@ -36,6 +36,7 @@ interface PublicStats {
     sheetId: string;
     mealRate: number;
     totalMeals: number;
+    totalBazar: number;
     totalExpenses: number;
     totalFunds: number;
     totalOpening: number;
@@ -119,23 +120,23 @@ function renderGridTable(
     label: string,
     showDefault?: boolean,
 ) {
-    const memberTotals: Record<string, number> = {}
-    let grandTotal = 0
-    for (const m of members) memberTotals[m.id] = 0
+    const memberTotals: Record<string, number> = {};
+    let grandTotal = 0;
+    for (const m of members) memberTotals[m.id] = 0;
     for (const row of rows) {
-        grandTotal += row.total
+        grandTotal += row.total;
         for (const m of members) {
-            memberTotals[m.id] += row.items[m.id] ?? 0
+            memberTotals[m.id] += row.items[m.id] ?? 0;
         }
     }
-    let defaultGrandTotal = 0
+    let defaultGrandTotal = 0;
     if (showDefault) {
         for (const m of members) {
-            const def = defaultMeals[m.id] ?? 0
-            memberTotals[m.id] += def
-            defaultGrandTotal += def
+            const def = defaultMeals[m.id] ?? 0;
+            memberTotals[m.id] += def;
+            defaultGrandTotal += def;
         }
-        grandTotal += defaultGrandTotal
+        grandTotal += defaultGrandTotal;
     }
 
     return (
@@ -171,7 +172,7 @@ function renderGridTable(
                                 Default
                             </td>
                             {members.map((m) => {
-                                const val = defaultMeals[m.id]
+                                const val = defaultMeals[m.id];
                                 return (
                                     <td
                                         key={m.id}
@@ -190,7 +191,7 @@ function renderGridTable(
                                             </span>
                                         }
                                     </td>
-                                )
+                                );
                             })}
                             <td className="border-b bg-amber-50/50 px-0.5 py-1.5 text-center font-medium text-amber-700">
                                 {defaultGrandTotal.toFixed(1)}
@@ -256,7 +257,15 @@ function renderGridTable(
     );
 }
 
-export default function PublicDashboard({ isLoggedIn }: { isLoggedIn?: boolean }) {
+export default function PublicDashboard({
+    isLoggedIn,
+    userRole,
+    userMemberId,
+}: {
+    isLoggedIn?: boolean;
+    userRole?: string | null;
+    userMemberId?: string | null;
+}) {
     const [data, setData] = useState<{
         stats: PublicStats | null;
         grid: GridItem[] | null;
@@ -399,40 +408,121 @@ export default function PublicDashboard({ isLoggedIn }: { isLoggedIn?: boolean }
                         <span>Meal Manage</span>
                     </div>
                     <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">Latest month</span>
+                        <span className="font-medium text-foreground">
+                            Latest month
+                        </span>
                         <span>&mdash;</span>
                         <span>{stats.currentMonthLabel}</span>
                     </div>
                     <div className="flex gap-2">
                         {isLoggedIn ?
-                            <Link
-                                href="/dashboard"
-                                className={buttonVariants({ size: "sm" })}
-                            >
-                                Dashboard
-                            </Link>
-                        : <>
-                            <Link
-                                href="/login"
-                                className={buttonVariants({
-                                    variant: "outline",
-                                    size: "sm",
-                                })}
-                            >
-                                Login
-                            </Link>
-                            <Link
-                                href="/register"
-                                className={buttonVariants({ size: "sm" })}
-                            >
-                                Register
-                            </Link>
-                        </>}
+                            userRole === "MEMBER" && userMemberId ?
+                                <Link
+                                    href={`/members/${userMemberId}`}
+                                    className={buttonVariants({ size: "sm" })}
+                                >
+                                    My Dashboard
+                                </Link>
+                            :   <Link
+                                    href="/dashboard"
+                                    className={buttonVariants({ size: "sm" })}
+                                >
+                                    Dashboard
+                                </Link>
+                        :   <>
+                                <Link
+                                    href="/login"
+                                    className={buttonVariants({
+                                        variant: "outline",
+                                        size: "sm",
+                                    })}
+                                >
+                                    Login
+                                </Link>
+                                <Link
+                                    href="/register"
+                                    className={buttonVariants({ size: "sm" })}
+                                >
+                                    Register
+                                </Link>
+                            </>
+                        }
                     </div>
                 </div>
             </header>
 
             <main className="mx-auto max-w-7xl space-y-6 p-4 pt-8">
+                {/* Summary Cards */}
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                    <Card>
+                        <CardContent className="p-4">
+                            <p className="text-xs text-muted-foreground">
+                                Meal Rate
+                            </p>
+                            <p className="text-xl font-bold">
+                                {formatCurrency(stats.mealRate)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Per meal cost
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="p-4">
+                            <p className="text-xs text-muted-foreground">
+                                Total Bazar
+                            </p>
+                            <p className="text-xl font-bold">
+                                {formatCurrency(stats.totalBazar)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Main category
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="p-4">
+                            <p className="text-xs text-muted-foreground">
+                                Total Expenses
+                            </p>
+                            <p className="text-xl font-bold">
+                                {formatCurrency(stats.totalExpenses)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                This month
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="p-4">
+                            <p className="text-xs text-muted-foreground">
+                                Total Funds
+                            </p>
+                            <p className="text-xl font-bold">
+                                {formatCurrency(stats.totalFunds)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Collected
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="p-4">
+                            <p className="text-xs text-muted-foreground">
+                                Outstanding
+                            </p>
+                            <p
+                                className={`text-xl font-bold ${stats.outstandingBalance >= 0 ? "text-green-600" : "text-red-600"}`}
+                            >
+                                {formatCurrency(stats.outstandingBalance)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Net balance
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+
                 {/* Member Summary */}
                 <Card>
                     {/* <CardHeader>
@@ -612,14 +702,19 @@ export default function PublicDashboard({ isLoggedIn }: { isLoggedIn?: boolean }
                                                             s.date,
                                                         )}
                                                     </td>
-                                                    <td className="px-2 py-1.5 truncate text-muted-foreground" title={s.details ?? ""}>
+                                                    <td
+                                                        className="px-2 py-1.5 truncate text-muted-foreground"
+                                                        title={s.details ?? ""}
+                                                    >
                                                         {s.details || "—"}
                                                     </td>
                                                     <td className="px-2 py-1.5 whitespace-nowrap">
                                                         {s.purchasedBy.name}
                                                     </td>
                                                     <td className="px-2 py-1.5 text-right tabular-nums font-medium whitespace-nowrap">
-                                                        {Math.round(s.totalCost)}
+                                                        {Math.round(
+                                                            s.totalCost,
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -654,9 +749,9 @@ export default function PublicDashboard({ isLoggedIn }: { isLoggedIn?: boolean }
                 </div>
 
                 {/* Extra Costs + Funds side by side */}
-                <div className="grid gap-3 lg:grid-cols-2">
+                <div className="grid gap-3 lg:grid-cols-3">
                     {/* Extra Costs */}
-                    <Card>
+                    <Card className="lg:col-span-1">
                         <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <DollarSign className="size-4" />
@@ -731,7 +826,7 @@ export default function PublicDashboard({ isLoggedIn }: { isLoggedIn?: boolean }
                     </Card>
 
                     {/* Funds */}
-                    <Card>
+                    <Card className="lg:col-span-2">
                         <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <Wallet className="size-4" />
@@ -739,86 +834,100 @@ export default function PublicDashboard({ isLoggedIn }: { isLoggedIn?: boolean }
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
-                            {funds && funds.length > 0 ? (() => {
-                                const grouped: Record<string, { name: string; total: number; txns: typeof funds }> = {}
-                                for (const f of funds) {
-                                    if (!grouped[f.member.id]) {
-                                        grouped[f.member.id] = { name: f.member.name, total: 0, txns: [] }
+                            {(() => {
+                                const grouped: Record<
+                                    string,
+                                    {
+                                        name: string;
+                                        total: number;
+                                        txns: NonNullable<typeof funds>;
                                     }
-                                    grouped[f.member.id].total += f.amount
-                                    grouped[f.member.id].txns.push(f)
+                                > = {};
+                                if (funds) {
+                                    for (const f of funds) {
+                                        if (!grouped[f.member.id]) {
+                                            grouped[f.member.id] = {
+                                                name: f.member.name,
+                                                total: 0,
+                                                txns: [],
+                                            };
+                                        }
+                                        grouped[f.member.id].total += f.amount;
+                                        grouped[f.member.id].txns.push(f);
+                                    }
                                 }
-                                const grandTotal = Object.values(grouped).reduce((s, g) => s + g.total, 0)
+                                const grandTotal = Object.values(
+                                    grouped,
+                                ).reduce((s, g) => s + g.total, 0);
+                                const memberFundMap = new Map(
+                                    stats.members.map((m) => [m.memberId, m]),
+                                )
                                 return (
-                                    <div className="max-h-[400px] overflow-y-auto divide-y">
-                                        {Object.entries(grouped).map(([memberId, g]) => (
-                                            <div key={memberId} className="p-3">
-                                                <div className="mb-2 flex items-center justify-between">
-                                                    <span className="text-sm font-semibold">{g.name}</span>
-                                                    <span className="text-sm font-bold tabular-nums text-green-600">
-                                                        + {formatCurrency(g.total)}
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    {g.txns.map((f) => (
-                                                        <div key={f.id} className="flex items-center justify-between text-xs text-muted-foreground">
-                                                            <span>{formatDateShort(f.date)}</span>
-                                                            <span className="tabular-nums font-medium text-green-600">
-                                                                + {formatCurrency(f.amount)}
-                                                            </span>
+                                    <div className="divide-y">
+                                        {stats.members.map((member) => {
+                                            const g = grouped[member.memberId]
+                                            const carried = member.openingBalance
+                                            const deposit = g?.total ?? 0
+                                            const totalBalance = carried + deposit
+                                            const txns = g?.txns ?? []
+                                            return (
+                                                <div
+                                                    key={member.memberId}
+                                                    className="p-3"
+                                                >
+                                                    <div className="mb-1 flex items-center justify-between">
+                                                        <span className="text-sm font-semibold">
+                                                            {member.memberName}
+                                                        </span>
+                                                        <span className="text-sm font-bold tabular-nums text-green-600">
+                                                            {formatCurrency(totalBalance)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mb-2 flex items-center gap-3 text-xs text-muted-foreground">
+                                                        <span>Previous Month: <strong>{formatCurrency(carried)}</strong></span>
+                                                        <span>Deposit: <strong>{formatCurrency(deposit)}</strong></span>
+                                                    </div>
+                                                    {txns.length > 0 && (
+                                                        <div className="space-y-1">
+                                                            {txns.map((f) => (
+                                                                <div
+                                                                    key={f.id}
+                                                                    className="flex items-center justify-between text-xs text-muted-foreground"
+                                                                >
+                                                                    <span>
+                                                                        {formatDateShort(f.date)}
+                                                                    </span>
+                                                                    <span className="tabular-nums font-medium text-green-600">
+                                                                        + {formatCurrency(f.amount)}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
+                                                    )}
                                                 </div>
-                                            </div>
-                                        ))}
+                                            )
+                                        })}
                                         <div className="flex items-center justify-between bg-muted/30 p-3 text-sm font-semibold">
                                             <span>Total Fund</span>
-                                            <span className="tabular-nums">{formatCurrency(grandTotal)}</span>
+                                            <span className="tabular-nums">
+                                                {formatCurrency(grandTotal)}
+                                            </span>
                                         </div>
                                     </div>
-                                )
-                            })() : (
-                                <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                                    No fund transactions for this month.
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-                {/* Summary Cards */}
-                <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-                    <Card>
-                        <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">Meal Rate</p>
-                            <p className="text-xl font-bold">{formatCurrency(stats.mealRate)}</p>
-                            <p className="text-xs text-muted-foreground">Per meal cost</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">Total Expenses</p>
-                            <p className="text-xl font-bold">{formatCurrency(stats.totalExpenses)}</p>
-                            <p className="text-xs text-muted-foreground">This month</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">Total Funds</p>
-                            <p className="text-xl font-bold">{formatCurrency(stats.totalFunds)}</p>
-                            <p className="text-xs text-muted-foreground">Collected</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <p className="text-xs text-muted-foreground">Outstanding</p>
-                            <p className={`text-xl font-bold ${stats.outstandingBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
-                                {formatCurrency(stats.outstandingBalance)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">Net balance</p>
+                                );
+                            })()}
                         </CardContent>
                     </Card>
                 </div>
             </main>
+
+            <footer className="border-t bg-card mt-8">
+                <div className="mx-auto flex h-12 max-w-7xl items-center justify-center px-4">
+                    <p className="text-xs text-muted-foreground">
+                        Created by <span className="font-medium text-foreground">@parvezhossainme</span>
+                    </p>
+                </div>
+            </footer>
         </div>
     );
 }

@@ -318,8 +318,9 @@ export default function FundLedgerPage() {
               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider">
                 <th className="text-left font-medium px-4 py-3 w-8"></th>
                 <th className="text-left font-medium px-4 py-3">Member</th>
+                <th className="text-right font-medium px-4 py-3">Carried</th>
                 <th className="text-right font-medium px-4 py-3">Deposit</th>
-                <th className="text-right font-medium px-4 py-3">Balance</th>
+                <th className="text-right font-medium px-4 py-3">Total</th>
                 {isAdmin && <th className="text-right font-medium px-4 py-3 w-16">Actions</th>}
               </tr>
             </thead>
@@ -344,6 +345,11 @@ export default function FundLedgerPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 font-medium">{member.memberName}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {member.openingBalance > 0
+                          ? formatCurrency(member.openingBalance)
+                          : <span className="text-muted-foreground">—</span>}
+                      </td>
                       <td className="px-4 py-3 text-right tabular-nums font-medium">
                         {deposits > 0
                           ? formatCurrency(deposits)
@@ -367,7 +373,7 @@ export default function FundLedgerPage() {
                     </tr>
                     {open && (
                       <tr key={`${member.memberId}-details`}>
-                        <td colSpan={isAdmin ? 5 : 4} className="px-4 pb-4">
+                        <td colSpan={isAdmin ? 6 : 5} className="px-4 pb-4">
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                               <thead>

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Menu, Eye, UtensilsCrossed } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { UserNav } from "./UserNav"
+import { NotificationBell } from "./NotificationBell"
 import { getSheetsAction } from "@/actions/sheets"
 import type { SessionUser } from "@/lib/auth"
 
@@ -70,6 +71,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
         <Eye className="size-4" />
         Public View
       </Link>
+      <NotificationBell />
       <UserNav user={user} />
     </header>
   )

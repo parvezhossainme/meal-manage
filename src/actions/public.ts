@@ -51,9 +51,18 @@ export async function getPublicDashboardAction() {
       where: { monthlySheetId: sheet.id },
       include: { category: true },
     })
+
+    const mainCategory = await prisma.expenseCategory.findFirst({
+      where: { name: MAIN_CATEGORY_NAME },
+    })
+
+    const mainExpenses = mainCategory
+      ? expenses.filter((e) => e.categoryId === mainCategory.id).reduce((sum, e) => sum + e.amount, 0)
+      : 0
+
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
 
-    const mealRate = adjustedTotalMeals > 0 ? Math.round((totalExpenses / adjustedTotalMeals) * 100) / 100 : 0
+    const mealRate = adjustedTotalMeals > 0 ? Math.round((mainExpenses / adjustedTotalMeals) * 100) / 100 : 0
 
     const fundTxns = await prisma.fundTransaction.findMany({
       where: { monthlySheetId: sheet.id },
@@ -67,9 +76,6 @@ export async function getPublicDashboardAction() {
     })
     const totalOpening = openingBalances.reduce((sum, ob) => sum + ob.amount, 0)
 
-    const mainCategory = await prisma.expenseCategory.findFirst({
-      where: { name: MAIN_CATEGORY_NAME },
-    })
     const extraExpenses = mainCategory
       ? expenses.filter((e) => e.categoryId !== mainCategory.id).reduce((sum, e) => sum + e.amount, 0)
       : 0
@@ -86,6 +92,8 @@ export async function getPublicDashboardAction() {
       ? Math.round((totalExtraCostEntries / activeMembers.length) * 100) / 100
       : 0
     const combinedExtraCostPerMember = Math.round((extraCostPerMember + extraCostPerMemberFromEntries) * 100) / 100
+
+    const totalAllCosts = totalExpenses + totalExtraCostEntries
 
     const expenseByCategory: Record<string, number> = {}
     for (const e of expenses) {
@@ -121,7 +129,7 @@ export async function getPublicDashboardAction() {
       }
     })
 
-    const outstandingBalance = Math.round((totalOpening + totalFunds - totalExpenses - totalExtraCostEntries) * 100) / 100
+    const outstandingBalance = Math.round((totalOpening + totalFunds - totalAllCosts) * 100) / 100
 
     // --- Meal Grid ---
     const days = getDaysInMonth(sheet.month, sheet.year)
@@ -188,7 +196,8 @@ export async function getPublicDashboardAction() {
         sheetId: sheet.id,
         mealRate,
         totalMeals,
-        totalExpenses: Math.round(totalExpenses * 100) / 100,
+        totalBazar: Math.round(mainExpenses * 100) / 100,
+        totalExpenses: Math.round(totalAllCosts * 100) / 100,
         totalFunds: Math.round(totalFunds * 100) / 100,
         totalOpening: Math.round(totalOpening * 100) / 100,
         activeMembers: activeMembers.length,
@@ -225,23 +234,52 @@ export async function getMemberDashboardAction(memberId: string, sheetId?: strin
     const member = await prisma.member.findUnique({ where: { id: memberId } })
     if (!member) return { error: "Member not found" }
 
-    const memberMealItems = await prisma.mealEntryItem.findMany({
-      where: { monthlySheetId: sheet.id, memberId },
+    const allMealItems = await prisma.mealEntryItem.findMany({
+      where: { monthlySheetId: sheet.id },
     })
+    const totalAllMemberMeals = allMealItems.reduce((sum, item) => sum + item.count, 0)
+
+    const memberMealItems = allMealItems.filter((i) => i.memberId === memberId)
     const totalMemberMeals = memberMealItems.reduce((sum, item) => sum + item.count, 0)
 
     const guestMeals = await prisma.guestMeal.findMany({
       where: { monthlySheetId: sheet.id },
     })
     const totalGuestMeals = guestMeals.reduce((sum, g) => sum + g.mealCount, 0)
+
+    const countDefaults = await shouldCountDefaultMeals()
+    const memberDefaultEntry = countDefaults
+      ? await prisma.defaultMealEntry.findUnique({
+          where: { monthlySheetId_memberId: { monthlySheetId: sheet.id, memberId } },
+        })
+      : null
+    const memberDefaultMeals = memberDefaultEntry?.count || 0
+
+    const allDefaultEntries = countDefaults
+      ? await prisma.defaultMealEntry.findMany({ where: { monthlySheetId: sheet.id } })
+      : []
+    const totalDefaultMeals = allDefaultEntries.reduce((sum, d) => sum + d.count, 0)
+
     const totalMeals = totalMemberMeals + totalGuestMeals
+    const adjustedTotalMeals = totalMeals + memberDefaultMeals
+
+    const allTotalMeals = totalAllMemberMeals + totalGuestMeals + totalDefaultMeals
 
     const expenses = await prisma.expense.findMany({
       where: { monthlySheetId: sheet.id },
       include: { category: true },
     })
+
+    const mainCategory = await prisma.expenseCategory.findFirst({
+      where: { name: MAIN_CATEGORY_NAME },
+    })
+
+    const mainExpenses = mainCategory
+      ? expenses.filter((e) => e.categoryId === mainCategory.id).reduce((sum, e) => sum + e.amount, 0)
+      : 0
+
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
-    const mealRate = totalMeals > 0 ? Math.round((totalExpenses / totalMeals) * 100) / 100 : 0
+    const mealRate = allTotalMeals > 0 ? Math.round((mainExpenses / allTotalMeals) * 100) / 100 : 0
 
     const funds = await prisma.fundTransaction.findMany({
       where: { monthlySheetId: sheet.id, memberId },
@@ -254,9 +292,6 @@ export async function getMemberDashboardAction(memberId: string, sheetId?: strin
     const openingBalance = openingBalances.find((ob) => ob.memberId === memberId)?.amount || 0
     const totalOpening = openingBalances.reduce((sum, ob) => sum + ob.amount, 0)
 
-    const mainCategory = await prisma.expenseCategory.findFirst({
-      where: { name: MAIN_CATEGORY_NAME },
-    })
     const extraExpenses = mainCategory
       ? expenses.filter((e) => e.categoryId !== mainCategory.id).reduce((sum, e) => sum + e.amount, 0)
       : 0
@@ -267,6 +302,7 @@ export async function getMemberDashboardAction(memberId: string, sheetId?: strin
 
     const extraCostEntries = await prisma.extraCost.findMany({
       where: { monthlySheetId: sheet.id },
+      orderBy: { date: "desc" },
     })
     const totalExtraCostEntries = extraCostEntries.reduce((sum, e) => sum + e.totalCost, 0)
     const extraCostPerMemberFromEntries = activeMembers > 0
@@ -274,7 +310,7 @@ export async function getMemberDashboardAction(memberId: string, sheetId?: strin
       : 0
     const combinedExtraCostPerMember = Math.round((extraCostPerMember + extraCostPerMemberFromEntries) * 100) / 100
 
-    const mealCost = Math.round(totalMemberMeals * mealRate * 100) / 100
+    const mealCost = Math.round(adjustedTotalMeals * mealRate * 100) / 100
     const totalCost = Math.round((mealCost + combinedExtraCostPerMember) * 100) / 100
     const balance = Math.round((openingBalance + totalFunds - totalCost) * 100) / 100
 
@@ -286,7 +322,14 @@ export async function getMemberDashboardAction(memberId: string, sheetId?: strin
 
     const allFunds = await prisma.fundTransaction.findMany({ where: { monthlySheetId: sheet.id } })
     const totalAllFunds = allFunds.reduce((s, f) => s + f.amount, 0)
+    const totalBazar = mainExpenses > 0 ? Math.round(mainExpenses * 100) / 100 : 0
     const outstandingBalance = Math.round((totalOpening + totalAllFunds - totalExpenses - totalExtraCostEntries) * 100) / 100
+
+    const shopping = await prisma.shopping.findMany({
+      where: { monthlySheetId: sheet.id },
+      include: { purchasedBy: true },
+      orderBy: { date: "desc" },
+    })
 
     return {
       stats: {
@@ -295,20 +338,27 @@ export async function getMemberDashboardAction(memberId: string, sheetId?: strin
         memberId: member.id,
         memberName: member.name,
         mealRate,
-        totalMeals: totalMemberMeals,
+        totalMeals: adjustedTotalMeals,
         totalExpenses: Math.round(totalExpenses * 100) / 100,
         totalFunds: Math.round(totalFunds * 100) / 100,
+        totalBazar,
+        totalOpening: Math.round(totalOpening * 100) / 100,
+        totalAllFunds: Math.round(totalAllFunds * 100) / 100,
+        totalExtraCostEntries: Math.round(totalExtraCostEntries * 100) / 100,
         openingBalance,
         activeMembers,
         guestMeals: totalGuestMeals,
         outstandingBalance,
         extraCostPerMember,
+        combinedExtraCostPerMember,
         expenseByCategory,
         mealCost,
         totalCost,
         balance,
         deposits: totalFunds,
       },
+      shopping,
+      extraCostEntries,
     }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to fetch member dashboard data" }

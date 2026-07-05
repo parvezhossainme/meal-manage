@@ -19,7 +19,7 @@ interface MonthSummary {
   locked?: boolean
   totalMeals: number
   guestMeals: number
-  totalExpenses: number
+  mainExpenses: number
   mealRate: number
   totalFunds: number
   memberCount: number
@@ -29,7 +29,7 @@ export default function YearlySummaryPage() {
   const router = useRouter()
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString())
   const [summaries, setSummaries] = useState<MonthSummary[]>([])
-  const [totals, setTotals] = useState({ totalMeals: 0, guestMeals: 0, totalExpenses: 0, totalFunds: 0, mealRate: 0 })
+  const [totals, setTotals] = useState({ totalMeals: 0, guestMeals: 0, mainExpenses: 0, totalFunds: 0, mealRate: 0 })
   const [loading, setLoading] = useState(false)
 
   const years = useMemo(() =>
@@ -51,17 +51,17 @@ export default function YearlySummaryPage() {
   }
 
   const handleExportCSV = () => {
-    const headers = ["Month", "Members", "Total Meals", "Guest Meals", "Total Expenses", "Meal Rate", "Total Funds"]
+    const headers = ["Month", "Members", "Total Meals", "Guest Meals", "Main Expenses", "Meal Rate", "Total Funds"]
     const rows = summaries.map(s => [
       s.monthLabel,
       s.memberCount.toString(),
       s.totalMeals.toFixed(1),
       s.guestMeals.toFixed(1),
-      s.totalExpenses.toFixed(2),
+      s.mainExpenses.toFixed(2),
       s.mealRate.toFixed(2),
       s.totalFunds.toFixed(2),
     ])
-    rows.push(["TOTAL", "", totals.totalMeals.toFixed(1), totals.guestMeals.toFixed(1), totals.totalExpenses.toFixed(2), totals.mealRate.toFixed(2), totals.totalFunds.toFixed(2)])
+    rows.push(["TOTAL", "", totals.totalMeals.toFixed(1), totals.guestMeals.toFixed(1), totals.mainExpenses.toFixed(2), totals.mealRate.toFixed(2), totals.totalFunds.toFixed(2)])
     const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n")
     const blob = new Blob([csv], { type: "text/csv" })
     const url = URL.createObjectURL(blob)
@@ -135,10 +135,10 @@ export default function YearlySummaryPage() {
             </Card>
             <Card>
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Expenses</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Main Expenses</CardTitle>
               </CardHeader>
               <CardContent className="py-2">
-                <p className="text-2xl font-semibold">{formatCurrency(totals.totalExpenses)}</p>
+                <p className="text-2xl font-semibold">{formatCurrency(totals.mainExpenses)}</p>
               </CardContent>
             </Card>
             <Card>
@@ -168,7 +168,7 @@ export default function YearlySummaryPage() {
                     <TableHead className="text-right">Members</TableHead>
                     <TableHead className="text-right">Total Meals</TableHead>
                     <TableHead className="text-right">Guest Meals</TableHead>
-                    <TableHead className="text-right">Total Expenses</TableHead>
+                    <TableHead className="text-right">Main Expenses</TableHead>
                     <TableHead className="text-right">Meal Rate</TableHead>
                     <TableHead className="text-right">Total Funds</TableHead>
                   </TableRow>
@@ -184,7 +184,7 @@ export default function YearlySummaryPage() {
                       <TableCell className="text-right">{s.sheetExists ? s.memberCount : "-"}</TableCell>
                       <TableCell className="text-right">{s.sheetExists ? s.totalMeals.toFixed(1) : "-"}</TableCell>
                       <TableCell className="text-right">{s.sheetExists ? s.guestMeals.toFixed(1) : "-"}</TableCell>
-                      <TableCell className="text-right">{s.sheetExists ? formatCurrency(s.totalExpenses) : "-"}</TableCell>
+                      <TableCell className="text-right">{s.sheetExists ? formatCurrency(s.mainExpenses) : "-"}</TableCell>
                       <TableCell className="text-right">{s.sheetExists ? formatCurrency(s.mealRate) : "-"}</TableCell>
                       <TableCell className="text-right">{s.sheetExists ? formatCurrency(s.totalFunds) : "-"}</TableCell>
                     </TableRow>
@@ -196,7 +196,7 @@ export default function YearlySummaryPage() {
                     <TableCell className="text-right"></TableCell>
                     <TableCell className="text-right">{totals.totalMeals.toFixed(1)}</TableCell>
                     <TableCell className="text-right">{totals.guestMeals.toFixed(1)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(totals.totalExpenses)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totals.mainExpenses)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(totals.mealRate)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(totals.totalFunds)}</TableCell>
                   </TableRow>

@@ -510,7 +510,7 @@ export default function MealGridSection({ sheetId }: { sheetId: string }) {
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {firstHalfRows.length > 0 && renderTable(firstHalfRows, firstHalfTotals, true)}
         {secondHalfRows.length > 0 && renderTable(secondHalfRows, secondHalfTotals, false)}
       </div>

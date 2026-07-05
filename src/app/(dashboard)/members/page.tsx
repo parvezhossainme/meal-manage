@@ -158,10 +158,12 @@ export default function MembersPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
           <p className="text-sm text-muted-foreground">Manage meal participants</p>
         </div>
-        <Button onClick={openAdd}>
-          <Plus className="size-4" />
-          Add Member
-        </Button>
+        {isAdmin && (
+          <Button onClick={openAdd}>
+            <Plus className="size-4" />
+            Add Member
+          </Button>
+        )}
       </div>
 
       <div className="relative">
@@ -222,10 +224,14 @@ export default function MembersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Switch checked={member.active} onCheckedChange={() => handleToggle(member.id)} />
-                        <Button variant="ghost" size="icon-sm" onClick={() => openEdit(member.id)}>
-                          <Pencil className="size-4" />
-                        </Button>
+                        {isAdmin && (
+                          <>
+                            <Switch checked={member.active} onCheckedChange={() => handleToggle(member.id)} />
+                            <Button variant="ghost" size="icon-sm" onClick={() => openEdit(member.id)}>
+                              <Pencil className="size-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

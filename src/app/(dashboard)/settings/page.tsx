@@ -5,9 +5,11 @@ import {
   getUsersAction,
   createUserAction,
   updateUserRoleAction,
+  updateUserPasswordAction,
   getSettingsAction,
   updateSettingAction,
 } from "@/actions/admin"
+import { getCurrentUserAction, changeMyPasswordAction } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -49,7 +51,9 @@ import {
 } from "@/components/ui/tabs"
 import CreateMonthDialog from "@/components/sheets/create-month-dialog"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Loader2, Save, Users, Settings2, Calendar, UtensilsCrossed } from "lucide-react"
+import {
+  Plus, Loader2, Save, Users, Settings2, Calendar, UtensilsCrossed, KeyRound
+} from "lucide-react"
 import { toast } from "sonner"
 import { formatDate } from "@/lib/utils"
 
@@ -82,6 +86,13 @@ export default function SettingsPage() {
   const [createMonthOpen, setCreateMonthOpen] = useState(false)
   const [newSettingKey, setNewSettingKey] = useState("")
   const [newSettingValue, setNewSettingValue] = useState("")
+  const [passwordDialog, setPasswordDialog] = useState<{ id: string; name: string } | null>(null)
+  const [newPassword, setNewPassword] = useState("")
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
+  const [myCurrentPassword, setMyCurrentPassword] = useState("")
+  const [myNewPassword, setMyNewPassword] = useState("")
+  const [savingMyPassword, setSavingMyPassword] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -96,6 +107,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadData()
+    getCurrentUserAction().then((r) => {
+      if (r.user) setCurrentUser({ id: r.user.id, name: r.user.name, role: r.user.role })
+    })
   }, [loadData])
 
   async function handleAddUser(e: React.FormEvent) {
@@ -142,6 +156,41 @@ export default function SettingsPage() {
     setSavingSettings((prev) => ({ ...prev, [key]: false }))
   }
 
+  async function handleChangePassword() {
+    if (!passwordDialog) return
+    if (!newPassword || newPassword.length < 4) {
+      toast.error("Password must be at least 4 characters")
+      return
+    }
+    setSavingPassword(true)
+    const result = await updateUserPasswordAction(passwordDialog.id, newPassword)
+    setSavingPassword(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("Password updated")
+      setPasswordDialog(null)
+      setNewPassword("")
+    }
+  }
+
+  async function handleChangeMyPassword() {
+    if (!myCurrentPassword || !myNewPassword || myNewPassword.length < 4) {
+      toast.error("New password must be at least 4 characters")
+      return
+    }
+    setSavingMyPassword(true)
+    const result = await changeMyPasswordAction(myCurrentPassword, myNewPassword)
+    setSavingMyPassword(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("Password changed successfully")
+      setMyCurrentPassword("")
+      setMyNewPassword("")
+    }
+  }
+
   async function handleAddSetting() {
     if (!newSettingKey || !newSettingValue) return
     setSavingSettings((prev) => ({ ...prev, [newSettingKey]: true }))
@@ -169,6 +218,47 @@ export default function SettingsPage() {
         <p className="text-sm text-muted-foreground">Manage users and system configuration</p>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <KeyRound className="size-4" />
+            Change My Password
+          </CardTitle>
+          <CardDescription>Update your own account password</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleChangeMyPassword() }}
+            className="flex flex-col sm:flex-row items-end gap-3"
+          >
+            <div className="flex-1 space-y-1 w-full">
+              <Label htmlFor="my-current-password">Current Password</Label>
+              <Input
+                id="my-current-password"
+                type="password"
+                value={myCurrentPassword}
+                onChange={(e) => setMyCurrentPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex-1 space-y-1 w-full">
+              <Label htmlFor="my-new-password">New Password</Label>
+              <Input
+                id="my-new-password"
+                type="password"
+                value={myNewPassword}
+                onChange={(e) => setMyNewPassword(e.target.value)}
+                required
+                minLength={4}
+              />
+            </div>
+            <Button type="submit" disabled={savingMyPassword}>
+              {savingMyPassword ? "Saving..." : "Change Password"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="users">
         <TabsList>
           <TabsTrigger value="users"><Users className="size-4" /> Users</TabsTrigger>
@@ -191,15 +281,16 @@ export default function SettingsPage() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
+                    {currentUser?.role === "SUPER_ADMIN" && <TableHead>Role</TableHead>}
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
+                    {currentUser?.role === "SUPER_ADMIN" && <TableHead className="w-20"></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-8 text-center">
+                      <TableCell colSpan={currentUser?.role === "SUPER_ADMIN" ? 6 : 4} className="py-8 text-center">
                         <Loader2 className="mx-auto size-5 animate-spin" />
                       </TableCell>
                     </TableRow>
@@ -208,23 +299,25 @@ export default function SettingsPage() {
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={user.role}
-                            onValueChange={(v: string | null) => {
-                              if (v) handleRoleChange(user.id, v)
-                            }}
-                          >
-                            <SelectTrigger className="h-7 w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
-                              <SelectItem value="MANAGER">Manager</SelectItem>
-                              <SelectItem value="MEMBER">Member</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
+                        {currentUser?.role === "SUPER_ADMIN" && (
+                          <TableCell>
+                            <Select
+                              value={user.role}
+                              onValueChange={(v: string | null) => {
+                                if (v) handleRoleChange(user.id, v)
+                              }}
+                            >
+                              <SelectTrigger className="h-7 w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                                <SelectItem value="MANAGER">Manager</SelectItem>
+                                <SelectItem value="MEMBER">Member</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        )}
                         <TableCell>
                           <Badge variant={user.active ? "default" : "secondary"}>
                             {user.active ? "Active" : "Inactive"}
@@ -233,6 +326,20 @@ export default function SettingsPage() {
                         <TableCell className="text-muted-foreground">
                           {formatDate(user.createdAt)}
                         </TableCell>
+                        {currentUser?.role === "SUPER_ADMIN" && (
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => {
+                              setNewPassword("")
+                              setPasswordDialog({ id: user.id, name: user.name })
+                            }}
+                          >
+                            <KeyRound className="size-4" />
+                          </Button>
+                        </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}
@@ -260,6 +367,7 @@ export default function SettingsPage() {
                   <Label htmlFor="password">Password (leave empty for auto-generate)</Label>
                   <Input id="password" type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} />
                 </div>
+                {currentUser?.role === "SUPER_ADMIN" && (
                 <div className="space-y-2">
                   <Label htmlFor="role">Role</Label>
                   <Select value={formRole} onValueChange={(v: string | null) => { if (v) setFormRole(v) }}>
@@ -273,6 +381,7 @@ export default function SettingsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                )}
                 <Button type="submit" disabled={saving} className="w-full">
                   {saving ? "Creating..." : "Create User"}
                 </Button>
@@ -402,7 +511,45 @@ export default function SettingsPage() {
         </TabsContent>
       </Tabs>
 
-      <CreateMonthDialog
+          <Dialog open={!!passwordDialog} onOpenChange={(o) => { if (!o) { setPasswordDialog(null); setNewPassword("") } }}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Change Password</DialogTitle>
+                <DialogDescription>Update password for {passwordDialog?.name}</DialogDescription>
+              </DialogHeader>
+              <form
+                onSubmit={(e) => { e.preventDefault(); handleChangePassword() }}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Minimum 4 characters"
+                    required
+                    minLength={4}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => { setPasswordDialog(null); setNewPassword("") }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={savingPassword}>
+                    {savingPassword ? "Saving..." : "Save Password"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <CreateMonthDialog
         open={createMonthOpen}
         onOpenChange={setCreateMonthOpen}
         onSuccess={() => {}}

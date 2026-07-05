@@ -1,8 +1,10 @@
 "use server"
 
-import { prisma } from "@/lib/db"
+import { prisma, shouldCountDefaultMeals } from "@/lib/db"
 import { requireAuth } from "@/lib/auth"
 import { getMonthName } from "@/lib/utils"
+
+const MAIN_CATEGORY_NAME = "Main"
 
 export async function getSheetsListAction() {
   try {
@@ -60,13 +62,18 @@ export async function getMemberStatementAction(memberId: string) {
       return { member: { id: member.id, name: member.name }, statements: [] }
     }
 
-    const [fundTxns, mealItems, allExpenses, allGuestMeals, allMealItems, allOpeningBalances] = await Promise.all([
+    const countDefaults = await shouldCountDefaultMeals()
+    const mainCategory = await prisma.expenseCategory.findFirst({ where: { name: MAIN_CATEGORY_NAME } })
+
+    const [fundTxns, mealItems, allExpenses, allGuestMeals, allMealItems, allOpeningBalances, defaultMealEntries, allExtraCostEntries] = await Promise.all([
       prisma.fundTransaction.findMany({ where: { memberId } }),
       prisma.mealEntryItem.findMany({ where: { memberId } }),
-      prisma.expense.findMany({ where: { monthlySheetId: { in: sheetIds } } }),
+      prisma.expense.findMany({ where: { monthlySheetId: { in: sheetIds } }, include: { category: true } }),
       prisma.guestMeal.findMany({ where: { monthlySheetId: { in: sheetIds } } }),
       prisma.mealEntryItem.findMany({ where: { monthlySheetId: { in: sheetIds } } }),
       prisma.openingBalance.findMany({ where: { monthlySheetId: { in: sheetIds } } }),
+      countDefaults ? prisma.defaultMealEntry.findMany({ where: { monthlySheetId: { in: sheetIds } } }) : [],
+      prisma.extraCost.findMany({ where: { monthlySheetId: { in: sheetIds } } }),
     ])
 
     const fundMap = new Map<string, number>()
@@ -80,8 +87,12 @@ export async function getMemberStatementAction(memberId: string) {
     }
 
     const expenseMap = new Map<string, number>()
+    const mainExpenseMap = new Map<string, number>()
     for (const e of allExpenses) {
       expenseMap.set(e.monthlySheetId, (expenseMap.get(e.monthlySheetId) || 0) + e.amount)
+      if (mainCategory && e.categoryId === mainCategory.id) {
+        mainExpenseMap.set(e.monthlySheetId, (mainExpenseMap.get(e.monthlySheetId) || 0) + e.amount)
+      }
     }
 
     const guestMealMap = new Map<string, number>()
@@ -94,14 +105,20 @@ export async function getMemberStatementAction(memberId: string) {
       if (m.monthlySheetId) totalMealsMap.set(m.monthlySheetId, (totalMealsMap.get(m.monthlySheetId) || 0) + m.count)
     }
 
+    const defaultMealTotalMap = new Map<string, number>()
+    const memberDefaultMap = new Map<string, number>()
+    for (const d of defaultMealEntries) {
+      defaultMealTotalMap.set(d.monthlySheetId, (defaultMealTotalMap.get(d.monthlySheetId) || 0) + d.count)
+      if (d.memberId === memberId) {
+        memberDefaultMap.set(d.monthlySheetId, (memberDefaultMap.get(d.monthlySheetId) || 0) + d.count)
+      }
+    }
+
     const memberCountMap = new Map<string, number>()
     for (const ob of allOpeningBalances) {
       memberCountMap.set(ob.monthlySheetId, (memberCountMap.get(ob.monthlySheetId) || 0) + 1)
     }
 
-    const mainCategory = await prisma.expenseCategory.findFirst({ where: { name: "Main" } })
-
-    const allExtraCostEntries = await prisma.extraCost.findMany({ where: { monthlySheetId: { in: sheetIds } } })
     const extraCostMap = new Map<string, number>()
     for (const e of allExtraCostEntries) {
       extraCostMap.set(e.monthlySheetId, (extraCostMap.get(e.monthlySheetId) || 0) + e.totalCost)
@@ -112,27 +129,34 @@ export async function getMemberStatementAction(memberId: string) {
       const sheet = balance.monthlySheet
       const sid = sheet.id
       const totalExpenses = expenseMap.get(sid) || 0
+      const mainExpenses = mainExpenseMap.get(sid) || 0
       const totalGuestMeals = guestMealMap.get(sid) || 0
       const totalMemberMeals = totalMealsMap.get(sid) || 0
-      const totalMeals = totalMemberMeals + totalGuestMeals
-      const mealRate = totalMeals > 0 ? totalExpenses / totalMeals : 0
+      const totalDefaultMeals = defaultMealTotalMap.get(sid) || 0
+
+      const adjustedTotalMeals = countDefaults
+        ? totalMemberMeals + totalGuestMeals + totalDefaultMeals
+        : totalMemberMeals + totalGuestMeals
+
+      const mealRate = adjustedTotalMeals > 0 ? Math.round((mainExpenses / adjustedTotalMeals) * 100) / 100 : 0
 
       const memberMeals = mealMap.get(sid) || 0
-      const mealCost = memberMeals * mealRate
+      const memberDefaults = memberDefaultMap.get(sid) || 0
+      const adjustedMemberMeals = countDefaults ? memberMeals + memberDefaults : memberMeals
+      const mealCost = Math.round(adjustedMemberMeals * mealRate * 100) / 100
 
-      let extraExpenses = 0
-      if (mainCategory) {
-        extraExpenses = allExpenses.filter(e => e.monthlySheetId === sid && e.categoryId !== mainCategory.id).reduce((s, e) => s + e.amount, 0)
-      }
+      const extraExpenses = totalExpenses - mainExpenses
       const memberCount = memberCountMap.get(sid) || 1
-      const extraCostPerMember = extraExpenses / memberCount
+      const extraCostPerMember = memberCount > 0 ? Math.round((extraExpenses / memberCount) * 100) / 100 : 0
 
       const totalExtraCostEntries = extraCostMap.get(sid) || 0
-      const extraCostPerMemberFromEntries = memberCount > 0 ? totalExtraCostEntries / memberCount : 0
+      const extraCostPerMemberFromEntries = memberCount > 0 ? Math.round((totalExtraCostEntries / memberCount) * 100) / 100 : 0
 
-      const totalCost = mealCost + extraCostPerMember + extraCostPerMemberFromEntries
+      const combinedExtraCost = Math.round((extraCostPerMember + extraCostPerMemberFromEntries) * 100) / 100
+
+      const totalCost = Math.round((mealCost + combinedExtraCost) * 100) / 100
       const deposits = fundMap.get(sid) || 0
-      const bal = balance.amount + deposits - totalCost
+      const bal = Math.round((balance.amount + deposits - totalCost) * 100) / 100
 
       statements.push({
         sheetId: sid,
@@ -141,13 +165,12 @@ export async function getMemberStatementAction(memberId: string) {
         year: sheet.year,
         locked: sheet.locked,
         openingBalance: balance.amount,
-        totalMeals: memberMeals,
-        mealCost: Math.round(mealCost * 100) / 100,
-        extraCost: Math.round(extraCostPerMember * 100) / 100,
-        extraCostEntries: Math.round(extraCostPerMemberFromEntries * 100) / 100,
-        totalCost: Math.round(totalCost * 100) / 100,
-        deposits: Math.round(deposits * 100) / 100,
-        balance: Math.round(bal * 100) / 100,
+        totalMeals: adjustedMemberMeals,
+        mealCost,
+        extraCost: combinedExtraCost,
+        totalCost,
+        deposits,
+        balance: bal,
       })
     }
 
@@ -298,10 +321,13 @@ export async function getYearlySummaryAction(year: number) {
   try {
     await requireAuth()
 
+    const countDefaults = await shouldCountDefaultMeals()
+    const mainCategory = await prisma.expenseCategory.findFirst({ where: { name: MAIN_CATEGORY_NAME } })
+
     const summaries = []
     let grandTotalMeals = 0
     let grandTotalGuestMeals = 0
-    let grandTotalExpenses = 0
+    let grandTotalMainExpenses = 0
     let grandTotalFunds = 0
 
     for (let month = 1; month <= 12; month++) {
@@ -316,7 +342,7 @@ export async function getYearlySummaryAction(year: number) {
           sheetExists: false,
           totalMeals: 0,
           guestMeals: 0,
-          totalExpenses: 0,
+          mainExpenses: 0,
           mealRate: 0,
           totalFunds: 0,
           memberCount: 0,
@@ -324,24 +350,34 @@ export async function getYearlySummaryAction(year: number) {
         continue
       }
 
-      const [mealItems, guestMeals, expenses, fundTxns, openingBalances] = await Promise.all([
+      const [mealItems, guestMeals, expenses, fundTxns, openingBalances, defaultMealEntries] = await Promise.all([
         prisma.mealEntryItem.findMany({ where: { monthlySheetId: sheet.id } }),
         prisma.guestMeal.findMany({ where: { monthlySheetId: sheet.id } }),
-        prisma.expense.findMany({ where: { monthlySheetId: sheet.id } }),
+        prisma.expense.findMany({ where: { monthlySheetId: sheet.id }, include: { category: true } }),
         prisma.fundTransaction.findMany({ where: { monthlySheetId: sheet.id } }),
         prisma.openingBalance.findMany({ where: { monthlySheetId: sheet.id } }),
+        countDefaults ? prisma.defaultMealEntry.findMany({ where: { monthlySheetId: sheet.id } }) : [],
       ])
 
       const totalMemberMeals = (mealItems as Array<{ count: number }>).reduce((s, m) => s + m.count, 0)
       const totalGuestMeals = (guestMeals as Array<{ mealCount: number }>).reduce((s, g) => s + g.mealCount, 0)
-      const totalMeals = totalMemberMeals + totalGuestMeals
-      const totalExpenses = (expenses as Array<{ amount: number }>).reduce((s, e) => s + e.amount, 0)
-      const totalFunds = (fundTxns as Array<{ amount: number }>).reduce((s, f) => s + f.amount, 0)
-      const mealRate = totalMeals > 0 ? Math.round((totalExpenses / totalMeals) * 100) / 100 : 0
+      const totalDefaultMeals = (defaultMealEntries as Array<{ count: number }>).reduce((s, d) => s + d.count, 0)
 
-      grandTotalMeals += totalMeals
+      const adjustedTotalMeals = countDefaults
+        ? totalMemberMeals + totalGuestMeals + totalDefaultMeals
+        : totalMemberMeals + totalGuestMeals
+
+      const mainExpenses = mainCategory
+        ? (expenses as Array<{ categoryId: string; amount: number }>)
+            .filter(e => e.categoryId === mainCategory.id)
+            .reduce((s, e) => s + e.amount, 0)
+        : 0
+      const totalFunds = (fundTxns as Array<{ amount: number }>).reduce((s, f) => s + f.amount, 0)
+      const mealRate = adjustedTotalMeals > 0 ? Math.round((mainExpenses / adjustedTotalMeals) * 100) / 100 : 0
+
+      grandTotalMeals += adjustedTotalMeals
       grandTotalGuestMeals += totalGuestMeals
-      grandTotalExpenses += totalExpenses
+      grandTotalMainExpenses += mainExpenses
       grandTotalFunds += totalFunds
 
       summaries.push({
@@ -350,23 +386,23 @@ export async function getYearlySummaryAction(year: number) {
         sheetExists: true,
         sheetId: sheet.id,
         locked: sheet.locked,
-        totalMeals: Math.round(totalMeals * 100) / 100,
+        totalMeals: Math.round(adjustedTotalMeals * 100) / 100,
         guestMeals: Math.round(totalGuestMeals * 100) / 100,
-        totalExpenses: Math.round(totalExpenses * 100) / 100,
+        mainExpenses: Math.round(mainExpenses * 100) / 100,
         mealRate,
         totalFunds: Math.round(totalFunds * 100) / 100,
         memberCount: openingBalances.length,
       })
     }
 
-    const overallMealRate = grandTotalMeals > 0 ? Math.round((grandTotalExpenses / grandTotalMeals) * 100) / 100 : 0
+    const overallMealRate = grandTotalMeals > 0 ? Math.round((grandTotalMainExpenses / grandTotalMeals) * 100) / 100 : 0
 
     return {
       summaries,
       totals: {
         totalMeals: Math.round(grandTotalMeals * 100) / 100,
         guestMeals: Math.round(grandTotalGuestMeals * 100) / 100,
-        totalExpenses: Math.round(grandTotalExpenses * 100) / 100,
+        mainExpenses: Math.round(grandTotalMainExpenses * 100) / 100,
         totalFunds: Math.round(grandTotalFunds * 100) / 100,
         mealRate: overallMealRate,
       },

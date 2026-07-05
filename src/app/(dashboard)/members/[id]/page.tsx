@@ -9,16 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
-    UtensilsCrossed,
-    DollarSign,
-    Users,
-    Coffee,
-    PiggyBank,
-    TrendingUp,
     ArrowLeft,
     RefreshCw,
+    ShoppingCart,
+    DollarSign,
+    ExternalLink,
 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateShort } from "@/lib/utils";
 import {
     BarChart,
     Bar,
@@ -32,6 +29,21 @@ import {
     CartesianGrid,
 } from "recharts";
 
+interface ShoppingEntry {
+    id: string;
+    date: string;
+    totalCost: number;
+    details: string | null;
+    purchasedBy: { id: string; name: string };
+}
+
+interface ExtraCostEntry {
+    id: string;
+    date: string;
+    description: string;
+    totalCost: number;
+}
+
 interface MemberStats {
     currentMonthLabel: string;
     sheetId: string;
@@ -41,11 +53,16 @@ interface MemberStats {
     totalMeals: number;
     totalExpenses: number;
     totalFunds: number;
+    totalBazar: number;
+    totalOpening: number;
+    totalAllFunds: number;
+    totalExtraCostEntries: number;
     openingBalance: number;
     activeMembers: number;
     guestMeals: number;
     outstandingBalance: number;
     extraCostPerMember: number;
+    combinedExtraCostPerMember: number;
     expenseByCategory: Record<string, number>;
     mealCost: number;
     totalCost: number;
@@ -69,6 +86,8 @@ export default function MemberDashboardPage() {
     const memberId = params.id as string;
 
     const [stats, setStats] = useState<MemberStats | null>(null);
+    const [shopping, setShopping] = useState<ShoppingEntry[] | null>(null);
+    const [extraCosts, setExtraCosts] = useState<ExtraCostEntry[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +99,8 @@ export default function MemberDashboardPage() {
             setError(result.error);
         } else if (result.stats) {
             setStats(result.stats as MemberStats);
+            setShopping((result.shopping as unknown as ShoppingEntry[]) ?? null);
+            setExtraCosts((result.extraCostEntries as unknown as ExtraCostEntry[]) ?? null);
         }
         setLoading(false);
     }, [memberId]);
@@ -165,6 +186,11 @@ export default function MemberDashboardPage() {
     const expenseData = Object.entries(stats.expenseByCategory).map(
         ([name, value]) => ({ name, value }),
     );
+    const extraCostTotal = extraCosts?.reduce((sum, c) => sum + c.totalCost, 0) ?? 0;
+    const chartData = [
+        ...expenseData,
+        ...(extraCostTotal > 0 ? [{ name: "Extra Costs", value: extraCostTotal }] : []),
+    ];
 
     return (
         <div className="space-y-6">
@@ -182,106 +208,104 @@ export default function MemberDashboardPage() {
                         {stats.currentMonthLabel} &middot; Member Dashboard
                     </p>
                 </div>
+                <Link href="/">
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                        <ExternalLink className="size-3.5" />
+                        Public Dashboard
+                    </Button>
+                </Link>
                 <GiveTakeBadge balance={stats.balance} />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            <UtensilsCrossed className="size-3" /> My Meals
-                        </CardTitle>
+                    <CardHeader className="pb-1 px-3 pt-3">
+                        <CardTitle className="text-[10px] font-medium text-muted-foreground">Meal Rate</CardTitle>
                     </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl font-bold">
-                            {stats.totalMeals.toFixed(1)}
-                        </div>
+                    <CardContent className="pb-3 px-3">
+                        <p className="text-lg font-bold">{formatCurrency(stats.mealRate)}</p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            <DollarSign className="size-3" /> Meal Cost
-                        </CardTitle>
+                    <CardHeader className="pb-1 px-3 pt-3">
+                        <CardTitle className="text-[10px] font-medium text-muted-foreground">Total Bazar</CardTitle>
                     </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl font-bold">
-                            {formatCurrency(stats.mealCost)}
-                        </div>
+                    <CardContent className="pb-3 px-3">
+                        <p className="text-lg font-bold">{formatCurrency(stats.totalBazar)}</p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            <Coffee className="size-3" /> Extra Cost
-                        </CardTitle>
+                    <CardHeader className="pb-1 px-3 pt-3">
+                        <CardTitle className="text-[10px] font-medium text-muted-foreground">Total Expenses</CardTitle>
                     </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl font-bold">
-                            {formatCurrency(stats.extraCostPerMember)}
-                        </div>
+                    <CardContent className="pb-3 px-3">
+                        <p className="text-lg font-bold">{formatCurrency(stats.totalExpenses)}</p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            <TrendingUp className="size-3" /> Total Cost
-                        </CardTitle>
+                    <CardHeader className="pb-1 px-3 pt-3">
+                        <CardTitle className="text-[10px] font-medium text-muted-foreground">Total Funds</CardTitle>
                     </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl font-bold">
-                            {formatCurrency(stats.totalCost)}
-                        </div>
+                    <CardContent className="pb-3 px-3">
+                        <p className="text-lg font-bold">{formatCurrency(stats.totalAllFunds)}</p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            <PiggyBank className="size-3" /> My Deposits
-                        </CardTitle>
+                    <CardHeader className="pb-1 px-3 pt-3">
+                        <CardTitle className="text-[10px] font-medium text-muted-foreground">Outstanding</CardTitle>
                     </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl font-bold">
-                            {formatCurrency(stats.deposits)}
-                        </div>
+                    <CardContent className="pb-3 px-3">
+                        <p className={`text-lg font-bold ${stats.outstandingBalance >= 0 ? "text-green-600" : "text-destructive"}`}>
+                            {formatCurrency(stats.outstandingBalance)}
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <hr className="border-t border-border" />
+
+            <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                <Card>
+                    <CardHeader className="pb-1 px-3 pt-3">
+                        <CardTitle className="text-[10px] font-medium text-muted-foreground">My Meals</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pb-3 px-3">
+                        <p className="text-lg font-bold">{stats.totalMeals.toFixed(1)}</p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            <Users className="size-3" /> Opening Balance
-                        </CardTitle>
+                    <CardHeader className="pb-1 px-3 pt-3">
+                        <CardTitle className="text-[10px] font-medium text-muted-foreground">Meal Cost</CardTitle>
                     </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl font-bold">
-                            {formatCurrency(stats.openingBalance)}
-                        </div>
+                    <CardContent className="pb-3 px-3">
+                        <p className="text-lg font-bold">{formatCurrency(stats.mealCost)}</p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            <DollarSign className="size-3" /> Meal Rate
-                        </CardTitle>
+                    <CardHeader className="pb-1 px-3 pt-3">
+                        <CardTitle className="text-[10px] font-medium text-muted-foreground">Total Cost</CardTitle>
                     </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl font-bold">
-                            {formatCurrency(stats.mealRate)}
-                        </div>
+                    <CardContent className="pb-3 px-3">
+                        <p className="text-lg font-bold">{formatCurrency(stats.totalCost)}</p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            <TrendingUp className="size-3" /> Balance
-                        </CardTitle>
+                    <CardHeader className="pb-1 px-3 pt-3">
+                        <CardTitle className="text-[10px] font-medium text-muted-foreground">My Deposits</CardTitle>
                     </CardHeader>
-                    <CardContent className="pb-3">
-                        <div
-                            className={`text-2xl font-bold ${stats.balance >= 0 ? "text-green-600" : "text-destructive"}`}
-                        >
+                    <CardContent className="pb-3 px-3">
+                        <p className="text-lg font-bold">{formatCurrency(stats.openingBalance + stats.deposits)}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Carried {formatCurrency(stats.openingBalance)} + Deposited {formatCurrency(stats.deposits)}</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-1 px-3 pt-3">
+                        <CardTitle className="text-[10px] font-medium text-muted-foreground">Balance</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pb-3 px-3">
+                        <p className={`text-lg font-bold ${stats.balance >= 0 ? "text-green-600" : "text-destructive"}`}>
                             {formatCurrency(stats.balance)}
-                        </div>
+                        </p>
                     </CardContent>
                 </Card>
             </div>
@@ -306,21 +330,37 @@ export default function MemberDashboardPage() {
                                     </span>
                                 </div>
                             ))}
+                            {extraCosts && extraCosts.length > 0 && (
+                                <>
+                                    <div className="border-t pt-2 mt-2" />
+                                    {extraCosts.map((c) => (
+                                        <div
+                                            key={c.id}
+                                            className="flex items-center justify-between text-sm"
+                                        >
+                                            <span className="text-muted-foreground">{c.description}</span>
+                                            <span className="font-medium tabular-nums">
+                                                {formatCurrency(c.totalCost)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-sm">
-                            Expenses by Category
+                            Expenses & Extra Costs by Category
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="flex items-center justify-center">
-                        {expenseData.length > 0 ?
+                        {chartData.length > 0 ?
                             <ResponsiveContainer width="100%" height={220}>
                                 <PieChart>
                                     <Pie
-                                        data={expenseData}
+                                        data={chartData}
                                         dataKey="value"
                                         nameKey="name"
                                         cx="50%"
@@ -330,7 +370,7 @@ export default function MemberDashboardPage() {
                                             `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
                                         }
                                     >
-                                        {expenseData.map((_, i) => (
+                                        {chartData.map((_, i) => (
                                             <Cell
                                                 key={i}
                                                 fill={COLORS[i % COLORS.length]}
@@ -377,7 +417,7 @@ export default function MemberDashboardPage() {
                                 Extra Cost (shared)
                             </dt>
                             <dd className="font-medium">
-                                {formatCurrency(stats.extraCostPerMember)}
+                                {formatCurrency(stats.combinedExtraCostPerMember)}
                             </dd>
                         </div>
                         <div className="flex justify-between text-sm">
@@ -398,11 +438,15 @@ export default function MemberDashboardPage() {
                         </div>
                         <div className="flex justify-between text-sm">
                             <dt className="text-muted-foreground">
-                                My Deposits
+                                Carried + Deposits
                             </dt>
                             <dd className="font-medium">
-                                {formatCurrency(stats.deposits)}
+                                {formatCurrency(stats.openingBalance + stats.deposits)}
                             </dd>
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground pl-4">
+                            <dt>Carried / Deposited</dt>
+                            <dd>{formatCurrency(stats.openingBalance)} / {formatCurrency(stats.deposits)}</dd>
                         </div>
                         <div className="flex justify-between border-t pt-2 text-sm font-semibold">
                             <dt>Balance</dt>
@@ -419,6 +463,108 @@ export default function MemberDashboardPage() {
                     </dl>
                 </CardContent>
             </Card>
+
+            <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <ShoppingCart className="size-4" />
+                            Bazar Details
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {shopping && shopping.length > 0 ?
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                    <thead>
+                                        <tr className="border-b bg-muted/50">
+                                            <th className="px-2 py-2 text-left font-medium">Date</th>
+                                            <th className="px-2 py-2 text-left font-medium">Items</th>
+                                            <th className="px-2 py-2 text-left font-medium">Who</th>
+                                            <th className="px-2 py-2 text-right font-medium">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {shopping.map((s) => (
+                                            <tr key={s.id} className="border-b hover:bg-muted/20">
+                                                <td className="px-2 py-1.5 text-muted-foreground whitespace-nowrap">
+                                                    {formatDateShort(s.date)}
+                                                </td>
+                                                <td className="px-2 py-1.5 truncate text-muted-foreground" title={s.details ?? ""}>
+                                                    {s.details || "—"}
+                                                </td>
+                                                <td className="px-2 py-1.5 whitespace-nowrap">{s.purchasedBy.name}</td>
+                                                <td className="px-2 py-1.5 text-right tabular-nums font-medium whitespace-nowrap">
+                                                    {Math.round(s.totalCost)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="border-t bg-muted/30 font-medium">
+                                            <td className="px-2 py-2" colSpan={3}>Total Bazar</td>
+                                            <td className="px-2 py-2 text-right tabular-nums">
+                                                {Math.round(shopping.reduce((s, x) => s + x.totalCost, 0))}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        :   <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+                                No bazar entries for this month.
+                            </div>
+                        }
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <DollarSign className="size-4" />
+                            Extra Costs
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {extraCosts && extraCosts.length > 0 ?
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                    <thead>
+                                        <tr className="border-b bg-muted/50">
+                                            <th className="px-2 py-2 text-left font-medium">Date</th>
+                                            <th className="px-2 py-2 text-left font-medium">Description</th>
+                                            <th className="px-2 py-2 text-right font-medium">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {extraCosts.map((c) => (
+                                            <tr key={c.id} className="border-b hover:bg-muted/20">
+                                                <td className="px-2 py-1.5 text-muted-foreground">
+                                                    {formatDateShort(c.date)}
+                                                </td>
+                                                <td className="px-2 py-1.5">{c.description}</td>
+                                                <td className="px-2 py-1.5 text-right tabular-nums font-medium">
+                                                    {formatCurrency(c.totalCost)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="border-t bg-muted/30 font-medium">
+                                            <td className="px-2 py-2" colSpan={2}>Total Extra Cost</td>
+                                            <td className="px-2 py-2 text-right tabular-nums">
+                                                {formatCurrency(extraCosts.reduce((s, x) => s + x.totalCost, 0))}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        :   <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+                                No extra costs for this month.
+                            </div>
+                        }
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

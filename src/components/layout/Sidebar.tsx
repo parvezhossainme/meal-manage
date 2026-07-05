@@ -23,6 +23,7 @@ import {
   PiggyBank,
   CircleDollarSign,
   ClipboardList,
+  User,
 } from "lucide-react"
 import type { SessionUser } from "@/lib/auth"
 
@@ -55,9 +56,12 @@ const navItems: Record<string, NavItem[]> = {
     { href: "/settings", label: "Settings", icon: Settings },
   ],
   MEMBER: [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/sheets", label: "Monthly Sheets", icon: Calendar },
     { href: "/members", label: "Members", icon: Users },
+    { href: "/shopping", label: "Shopping", icon: ShoppingCart },
+    { href: "/extra-costs", label: "Extra Cost", icon: CircleDollarSign },
     { href: "/reports", label: "My Reports", icon: FileText },
+    { href: "/settings", label: "Settings", icon: Settings },
   ],
 }
 
@@ -70,7 +74,13 @@ interface SidebarProps {
 export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const items = navItems[user.role] || navItems.MEMBER
+  let items = navItems[user.role] || navItems.MEMBER
+  if (user.role === "MEMBER" && user.memberId) {
+    items = [
+      { href: `/members/${user.memberId}`, label: "My Dashboard", icon: User },
+      ...items,
+    ]
+  }
   const [sheets, setSheets] = useState<Array<{ id: string; label: string }>>([])
 
   useEffect(() => {
@@ -137,7 +147,9 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           <nav className="flex flex-col gap-0.5">
             {items.map((item) => {
               const Icon = item.icon
-              const active = pathname === item.href || pathname.startsWith(item.href + "/")
+              const active = item.href === "/members"
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(item.href + "/")
               return (
                 <Link
                   key={item.href}

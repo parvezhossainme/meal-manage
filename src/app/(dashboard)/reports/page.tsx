@@ -2,10 +2,9 @@ import Link from "next/link"
 import { requireAuth } from "@/lib/auth"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Calendar, Users, PiggyBank, DollarSign, Coffee, ArrowRight, Printer, FileDown, FileSpreadsheet } from "lucide-react"
+import { FileText, Users, PiggyBank, DollarSign, Coffee, ArrowRight, Printer, FileDown, FileSpreadsheet } from "lucide-react"
 
 const reports = [
-  { href: "/sheets", label: "Monthly Sheet", description: "View and manage monthly meal sheets", icon: Calendar, color: "text-blue-500" },
   { href: "/reports/member-statement", label: "Member Statement", description: "Individual member balances and statements", icon: Users, color: "text-green-500" },
   { href: "/reports/fund-ledger", label: "Fund Ledger", description: "Detailed fund transaction history", icon: PiggyBank, color: "text-purple-500" },
   { href: "/reports/expense-ledger", label: "Expense Ledger", description: "Detailed expense transaction history", icon: DollarSign, color: "text-red-500" },
@@ -18,11 +17,12 @@ const exportActions = ["PDF", "Excel", "CSV", "Print"]
 
 export default async function ReportsPage() {
   const user = await requireAuth()
+  const pageTitle = user.role === "MEMBER" ? "My Reports" : "Reports"
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
         <p className="text-sm text-muted-foreground">Generate and view reports</p>
       </div>
 

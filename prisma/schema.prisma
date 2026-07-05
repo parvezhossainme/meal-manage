@@ -19,11 +19,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  announcements Announcement[]
-  auditLogs     AuditLog[]
-  expenses      Expense[]
-  fundTxns      FundTransaction[]
-  notifications Notification[]
+  announcements  Announcement[]
+  auditLogs      AuditLog[]
+  expenses       Expense[]
+  fundTxns       FundTransaction[]
+  notifications  Notification[]
+  bazarRequests  BazarRequest[]
 
   member Member?
 }
@@ -46,6 +47,7 @@ model Member {
   shopping          Shopping[]
   defaultMeals      DefaultMealEntry[]
   carryForwardHistories CarryForwardHistory[]
+  bazarRequests     BazarRequest[]
 }
 
 model MonthlySheet {
@@ -67,6 +69,7 @@ model MonthlySheet {
   shopping        Shopping[]
   dailyNotes      DailyNote[]
   extraCosts      ExtraCost[]
+  bazarRequests    BazarRequest[]
   carryForwardFrom CarryForwardHistory[] @relation("FromSheet")
   carryForwardTo   CarryForwardHistory[] @relation("ToSheet")
 
@@ -268,6 +271,25 @@ model Notification {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BazarRequest {
+  id             String   @id @default(cuid())
+  monthlySheetId String
+  memberId       String
+  date           DateTime
+  totalCost      Float
+  details        String?
+  status         String   @default("PENDING")
+  handledById    String?
+  handledAt      DateTime?
+  rejectReason   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  monthlySheet MonthlySheet @relation(fields: [monthlySheetId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id])
+  handledBy    User?        @relation(fields: [handledById], references: [id])
 }
 
 model AuditLog {

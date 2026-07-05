@@ -99,6 +99,12 @@ export async function deleteShoppingAction(id: string) {
 
     await prisma.$transaction(async (tx) => {
       await tx.shopping.delete({ where: { id } })
+      await tx.expense.deleteMany({
+        where: {
+          monthlySheetId: existing.monthlySheetId,
+          remarks: { contains: `Bazar entry: ${id}` },
+        },
+      })
       await tx.auditLog.create({
         data: {
           userId: session.id,

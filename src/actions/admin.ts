@@ -70,6 +70,20 @@ export async function updateUserRoleAction(id: string, role: string) {
   }
 }
 
+export async function updateUserPasswordAction(id: string, newPassword: string) {
+  try {
+    const session = await requireSuperAdmin()
+    if (!newPassword || newPassword.length < 4) {
+      return { error: "Password must be at least 4 characters" }
+    }
+    const hashed = await hashPassword(newPassword)
+    await prisma.user.update({ where: { id }, data: { password: hashed } })
+    return { success: true }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to update password" }
+  }
+}
+
 export async function getSettingsAction() {
   try {
     const session = await requireAdmin()

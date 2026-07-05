@@ -43,13 +43,18 @@ export async function calculateMonthlySummaryAction(sheetId: string) {
       where: { monthlySheetId: sheetId },
       include: { category: true },
     })
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
-
-    const mealRate = adjustedTotalMeals > 0 ? Math.round((totalExpenses / adjustedTotalMeals) * 100) / 100 : 0
 
     const mainCategory = await prisma.expenseCategory.findFirst({
       where: { name: MAIN_CATEGORY_NAME },
     })
+
+    const mainExpenses = mainCategory
+      ? expenses.filter((e) => e.categoryId === mainCategory.id).reduce((sum, e) => sum + e.amount, 0)
+      : 0
+
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+
+    const mealRate = adjustedTotalMeals > 0 ? Math.round((mainExpenses / adjustedTotalMeals) * 100) / 100 : 0
 
     const extraExpenses = mainCategory
       ? expenses.filter((e) => e.categoryId !== mainCategory.id).reduce((sum, e) => sum + e.amount, 0)
@@ -204,9 +209,18 @@ export async function getDashboardStatsAction(sheetId?: string) {
       where: { monthlySheetId: sheet.id },
       include: { category: true },
     })
+
+    const mainCategory = await prisma.expenseCategory.findFirst({
+      where: { name: MAIN_CATEGORY_NAME },
+    })
+
+    const mainExpenses = mainCategory
+      ? expenses.filter((e) => e.categoryId === mainCategory.id).reduce((sum, e) => sum + e.amount, 0)
+      : 0
+
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
 
-    const mealRate = adjustedTotalMeals > 0 ? Math.round((totalExpenses / adjustedTotalMeals) * 100) / 100 : 0
+    const mealRate = adjustedTotalMeals > 0 ? Math.round((mainExpenses / adjustedTotalMeals) * 100) / 100 : 0
     const mealRateWithDefaults = mealRate
     const totalMealsWithDefaults = adjustedTotalMeals
 
@@ -220,9 +234,6 @@ export async function getDashboardStatsAction(sheetId?: string) {
     })
     const totalOpening = openingBalances.reduce((sum, ob) => sum + ob.amount, 0)
 
-    const mainCategory = await prisma.expenseCategory.findFirst({
-      where: { name: MAIN_CATEGORY_NAME },
-    })
     const extraExpenses = mainCategory
       ? expenses.filter((e) => e.categoryId !== mainCategory!.id).reduce((sum, e) => sum + e.amount, 0)
       : 0
