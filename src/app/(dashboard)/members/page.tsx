@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import Link from "next/link"
 import {
   getMembersAction,
   createMemberAction,
@@ -24,7 +23,6 @@ import {
 } from "@/components/ui/table"
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -34,7 +32,7 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card"
-import { Plus, Pencil, Search, Loader2, ExternalLink } from "lucide-react"
+import { Plus, Pencil, Search, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 interface MemberItem {

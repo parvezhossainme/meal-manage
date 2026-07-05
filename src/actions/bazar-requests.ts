@@ -130,7 +130,7 @@ export async function approveBazarRequestAction(id: string) {
     })
 
     revalidatePath("/shopping")
-    revalidatePath("/bazar-requests")
+    revalidatePath("/shopping")
     return { success: true }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to approve request" }
@@ -163,7 +163,7 @@ export async function rejectBazarRequestAction(id: string, reason?: string) {
     })
 
     revalidatePath("/shopping")
-    revalidatePath("/bazar-requests")
+    revalidatePath("/shopping")
     return { success: true }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to reject request" }

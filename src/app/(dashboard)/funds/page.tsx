@@ -5,7 +5,7 @@ import { getFundLedgerByMemberAction, createFundAction, updateFundAction, delete
 import { getActiveMembersAction } from "@/actions/members"
 import { getSheetsListAction } from "@/actions/reports"
 import { getCurrentUserAction } from "@/actions/auth"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"

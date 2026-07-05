@@ -17,16 +17,11 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
     Tooltip,
     ResponsiveContainer,
     PieChart,
     Pie,
     Cell,
-    CartesianGrid,
 } from "recharts";
 
 interface ShoppingEntry {

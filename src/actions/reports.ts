@@ -13,7 +13,7 @@ export async function getSheetsListAction() {
       orderBy: [{ year: "desc" }, { month: "desc" }],
     })
     return { sheets: sheets.map(s => ({ id: s.id, label: s.label, month: s.month, year: s.year, locked: s.locked })) }
-  } catch (e) {
+  } catch {
     return { error: "Failed to fetch sheets" }
   }
 }
@@ -26,7 +26,7 @@ export async function getMembersListAction() {
       orderBy: { name: "asc" },
     })
     return { members: members.map(m => ({ id: m.id, name: m.name })) }
-  } catch (e) {
+  } catch {
     return { error: "Failed to fetch members" }
   }
 }
@@ -39,7 +39,7 @@ export async function getExpenseCategoriesListAction() {
       orderBy: { name: "asc" },
     })
     return { categories: categories.map(c => ({ id: c.id, name: c.name })) }
-  } catch (e) {
+  } catch {
     return { error: "Failed to fetch categories" }
   }
 }
@@ -178,6 +178,7 @@ export async function getMemberStatementAction(memberId: string) {
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to fetch member statement" }
   }
+
 }
 
 export async function getFundLedgerAction(params: { sheetId?: string; memberId?: string }) {

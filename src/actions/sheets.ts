@@ -2,7 +2,6 @@
 
 import { prisma, shouldCountDefaultMeals } from "@/lib/db"
 import { requireAuth, requireAdmin } from "@/lib/auth"
-import { createMonthSchema } from "@/schemas/index"
 import { revalidatePath } from "next/cache"
 
 const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]

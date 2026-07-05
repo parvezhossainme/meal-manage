@@ -42,7 +42,7 @@ export async function createExpenseCategoryAction(name: string) {
       data: { name },
     })
 
-    revalidatePath("/expenses")
+    revalidatePath("/sheets")
     return { success: true, category }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to create category" }

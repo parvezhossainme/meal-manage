@@ -3,17 +3,25 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getPublicDashboardAction } from "@/actions/public";
+import { getActiveAnnouncementsAction } from "@/actions/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
     UtensilsCrossed,
     DollarSign,
     Coffee,
-    TrendingUp,
     ShoppingCart,
     Wallet,
+    Megaphone,
 } from "lucide-react";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 
@@ -277,6 +285,8 @@ export default function PublicDashboard({
     } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [announcements, setAnnouncements] = useState<Array<{ id: string; title: string; content: string; createdAt: Date }>>([]);
+    const [announcementOpen, setAnnouncementOpen] = useState(false);
 
     useEffect(() => {
         getPublicDashboardAction().then((result: Record<string, unknown>) => {
@@ -295,6 +305,17 @@ export default function PublicDashboard({
                 });
             }
             setLoading(false);
+        });
+        getActiveAnnouncementsAction().then((result) => {
+            if (result.announcements) {
+                setAnnouncements(result.announcements as Array<{ id: string; title: string; content: string; createdAt: Date }>);
+                if (result.announcements.length > 0) {
+                    const dismissed = sessionStorage.getItem("announcements-dismissed")
+                    if (dismissed !== "true") {
+                        setAnnouncementOpen(true)
+                    }
+                }
+            }
         });
     }, []);
 
@@ -920,6 +941,42 @@ export default function PublicDashboard({
                     </Card>
                 </div>
             </main>
+
+            <Dialog open={announcementOpen} onOpenChange={setAnnouncementOpen}>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Megaphone className="size-5 text-primary" />
+                    Announcements
+                  </DialogTitle>
+                  <DialogDescription>Important updates and notices</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 max-h-80 overflow-y-auto">
+                  {announcements.map((a) => (
+                    <div key={a.id} className="rounded-lg border p-4">
+                      <h4 className="font-semibold text-sm mb-1">{a.title}</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.content}</p>
+                      <p className="text-xs text-muted-foreground mt-2">{formatDateShort(a.createdAt.toString())}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      sessionStorage.setItem("announcements-dismissed", "true")
+                      setAnnouncementOpen(false)
+                    }}
+                  >
+                    Don&apos;t show again
+                  </Button>
+                  <Button onClick={() => setAnnouncementOpen(false)}>
+                    Close
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             <footer className="border-t bg-card mt-8">
                 <div className="mx-auto flex h-12 max-w-7xl items-center justify-center px-4">

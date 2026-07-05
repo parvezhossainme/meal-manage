@@ -43,7 +43,7 @@ export async function createUserAction(data: { email: string; name: string; pass
       select: { id: true, email: true, name: true, role: true, active: true, createdAt: true },
     })
 
-    revalidatePath("/admin/users")
+    revalidatePath("/settings")
     return { success: true, user, tempPassword: password }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to create user" }
@@ -63,7 +63,7 @@ export async function updateUserRoleAction(id: string, role: string) {
       select: { id: true, email: true, name: true, role: true, active: true, createdAt: true },
     })
 
-    revalidatePath("/admin/users")
+    revalidatePath("/settings")
     return { success: true, user }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to update user role" }
@@ -78,6 +78,7 @@ export async function updateUserPasswordAction(id: string, newPassword: string) 
     }
     const hashed = await hashPassword(newPassword)
     await prisma.user.update({ where: { id }, data: { password: hashed } })
+    revalidatePath("/settings")
     return { success: true }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to update password" }
@@ -102,7 +103,7 @@ export async function updateSettingAction(key: string, value: string) {
       update: { value },
       create: { key, value },
     })
-    revalidatePath("/admin/settings")
+    revalidatePath("/settings")
     return { success: true, setting }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to update setting" }
@@ -164,6 +165,19 @@ export async function getAnnouncementsAction() {
   }
 }
 
+export async function getActiveAnnouncementsAction() {
+  try {
+    const announcements = await prisma.announcement.findMany({
+      where: { active: true },
+      select: { id: true, title: true, content: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    })
+    return { announcements }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to fetch announcements" }
+  }
+}
+
 export async function createAnnouncementAction(data: { title: string; content: string; active?: boolean }) {
   try {
     const session = await requireAdmin()
@@ -183,6 +197,7 @@ export async function createAnnouncementAction(data: { title: string; content: s
     })
 
     revalidatePath("/announcements")
+    revalidatePath("/")
     return { success: true, announcement }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to create announcement" }
@@ -194,6 +209,7 @@ export async function deleteAnnouncementAction(id: string) {
     const session = await requireAdmin()
     await prisma.announcement.delete({ where: { id } })
     revalidatePath("/announcements")
+    revalidatePath("/")
     return { success: true }
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to delete announcement" }

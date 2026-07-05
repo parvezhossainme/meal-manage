@@ -1,7 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/db"
-import { requireAuth, requireAdmin } from "@/lib/auth"
+import { requireAuth } from "@/lib/auth"
 import { mealCellSchema, guestMealSchema } from "@/schemas/index"
 import { revalidatePath } from "next/cache"
 
