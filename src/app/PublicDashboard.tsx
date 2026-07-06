@@ -385,12 +385,12 @@ export default function PublicDashboard({
                     <Link href="/login" className={buttonVariants()}>
                         Login
                     </Link>
-                    <Link
+                    {/* <Link
                         href="/register"
                         className={buttonVariants({ variant: "outline" })}
                     >
                         Register
-                    </Link>
+                    </Link> */}
                 </div>
             </div>
         );
@@ -464,12 +464,12 @@ export default function PublicDashboard({
                                 >
                                     Login
                                 </Link>
-                                <Link
+                                {/* <Link
                                     href="/register"
                                     className={buttonVariants({ size: "sm" })}
                                 >
                                     Register
-                                </Link>
+                                </Link> */}
                             </>
                         }
                     </div>
