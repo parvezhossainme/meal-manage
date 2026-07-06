@@ -54,11 +54,9 @@ export function UserNav({ user }: { user: SessionUser }) {
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <a href="/api/logout" className="flex items-center gap-2 w-full">
-            <LogOut className="size-4" />
-            Logout
-          </a>
+        <DropdownMenuItem onClick={() => window.location.href = "/api/logout"}>
+          <LogOut className="size-4" />
+          Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

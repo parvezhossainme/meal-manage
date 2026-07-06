@@ -4,6 +4,7 @@ import { useActionState } from "react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { loginAction } from "@/actions/auth"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +15,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card"
-import { UtensilsCrossed } from "lucide-react"
+import { Eye, UtensilsCrossed } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -30,10 +31,10 @@ export default function LoginPage() {
   }, [state, router])
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+      <UtensilsCrossed className="size-12 mb-4 text-primary" />
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
-          <UtensilsCrossed className="size-10" />
           <CardTitle>Meal Manage</CardTitle>
           <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
@@ -66,6 +67,12 @@ export default function LoginPage() {
               {pending ? "Signing in..." : "Sign in"}
             </Button>
           </form>
+          <div className="mt-4 text-center">
+            <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Eye className="size-4" />
+              Go Public Dashboard
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
