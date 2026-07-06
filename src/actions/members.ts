@@ -1,7 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/db"
-import { requireAuth, requireAdmin, hashPassword } from "@/lib/auth"
+import { requireAuth, requireAdmin, requireSuperAdmin, hashPassword } from "@/lib/auth"
 import { memberSchema } from "@/schemas/index"
 import { revalidatePath } from "next/cache"
 
@@ -34,7 +34,7 @@ export async function getActiveMembersAction() {
 
 export async function createMemberAction(data: { name: string; phone?: string; email?: string; active?: boolean }) {
   try {
-    const session = await requireAdmin()
+    const session = await requireSuperAdmin()
     const parsed = memberSchema.safeParse(data)
     if (!parsed.success) {
       return { error: parsed.error.issues[0]?.message || "Invalid input" }
@@ -70,26 +70,32 @@ export async function createMemberAction(data: { name: string; phone?: string; e
 
 export async function updateMemberAction(id: string, data: { name?: string; phone?: string; email?: string; active?: boolean }) {
   try {
-    await requireAdmin()
+    const session = await requireAdmin()
+    const isSuperAdmin = session.role === "SUPER_ADMIN"
+
+    if (!isSuperAdmin && (data.name !== undefined || data.phone !== undefined || data.email !== undefined)) {
+      return { error: "Only Super Admin can edit name, phone, or email" }
+    }
+
     const member = await prisma.member.update({
       where: { id },
       data: {
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.phone !== undefined && { phone: data.phone || null }),
-        ...(data.email !== undefined && { email: data.email || null }),
+        ...(isSuperAdmin && data.name !== undefined && { name: data.name }),
+        ...(isSuperAdmin && data.phone !== undefined && { phone: data.phone || null }),
+        ...(isSuperAdmin && data.email !== undefined && { email: data.email || null }),
         ...(data.active !== undefined && { active: data.active }),
       },
       include: { user: { select: { id: true, email: true, role: true, active: true } } },
     })
 
     if (member.userId) {
-      if (data.name !== undefined) {
+      if (isSuperAdmin && data.name !== undefined) {
         await prisma.user.update({
           where: { id: member.userId },
           data: { name: member.name },
         })
       }
-      if (data.email !== undefined && member.email) {
+      if (isSuperAdmin && data.email !== undefined && member.email) {
         await prisma.user.update({
           where: { id: member.userId },
           data: { email: member.email },

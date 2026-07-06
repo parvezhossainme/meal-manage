@@ -14,7 +14,6 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card"
-import Link from "next/link"
 import { UtensilsCrossed } from "lucide-react"
 
 export default function LoginPage() {
@@ -66,15 +65,6 @@ export default function LoginPage() {
             <Button type="submit" disabled={pending} className="w-full">
               {pending ? "Signing in..." : "Sign in"}
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/register"
-                className="underline underline-offset-4 hover:text-foreground"
-              >
-                Register
-              </Link>
-            </p>
           </form>
         </CardContent>
       </Card>

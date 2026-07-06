@@ -76,8 +76,6 @@ export default function MembersPage() {
     loadMembers()
   }, [loadMembers])
 
-  const editMember = members.find((m) => m.id === editId)
-
   function openAdd() {
     setEditId(null)
     setFormName("")
@@ -102,11 +100,13 @@ export default function MembersPage() {
     setSaving(true)
     try {
       if (editId) {
-        const result = await updateMemberAction(editId, {
-          name: formName,
-          phone: formPhone || undefined,
-          email: formEmail || undefined,
-        })
+        const payload: { name?: string; phone?: string; email?: string; active?: boolean } = {}
+        if (userRole === "SUPER_ADMIN") {
+          payload.name = formName
+          payload.phone = formPhone || undefined
+          payload.email = formEmail || undefined
+        }
+        const result = await updateMemberAction(editId, payload)
         if (result.error) {
           toast.error(result.error)
         } else {
@@ -155,7 +155,7 @@ export default function MembersPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
           <p className="text-sm text-muted-foreground">Manage meal participants</p>
         </div>
-        {userRole !== "MEMBER" && (
+        {userRole === "SUPER_ADMIN" && (
           <Button onClick={openAdd}>
             <Plus className="size-4" />
             Add Member
@@ -183,19 +183,19 @@ export default function MembersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                {userRole === "SUPER_ADMIN" && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 6 : 5} className="py-8 text-center text-muted-foreground">
                     <Loader2 className="mx-auto size-5 animate-spin" />
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 6 : 5} className="py-8 text-center text-muted-foreground">
                     No members found
                   </TableCell>
                 </TableRow>
@@ -221,18 +221,16 @@ export default function MembersPage() {
                         {member.active ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {userRole !== "MEMBER" && (
-                          <>
-                            <Switch checked={member.active} onCheckedChange={() => handleToggle(member.id)} />
-                            <Button variant="ghost" size="icon-sm" onClick={() => openEdit(member.id)}>
-                              <Pencil className="size-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+                    {userRole === "SUPER_ADMIN" && (
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Switch checked={member.active} onCheckedChange={() => handleToggle(member.id)} />
+                          <Button variant="ghost" size="icon-sm" onClick={() => openEdit(member.id)}>
+                            <Pencil className="size-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -252,15 +250,15 @@ export default function MembersPage() {
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Member name" required />
+              <Input id="name" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Member name" required disabled={!!editId && userRole !== "SUPER_ADMIN"} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Phone number" />
+              <Input id="phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Phone number" disabled={!!editId && userRole !== "SUPER_ADMIN"} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="Email address" />
+              <Input id="email" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="Email address" disabled={!!editId && userRole !== "SUPER_ADMIN"} />
             </div>
             <Button type="submit" disabled={saving} className="w-full">
               {saving ? "Saving..." : editId ? "Update Member" : "Add Member"}

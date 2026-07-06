@@ -276,12 +276,14 @@ export default function SettingsPage() {
         <TabsContent value="users" className="mt-4 space-y-4">
           {currentUser?.role !== "MEMBER" ? (
             <>
+              {currentUser?.role === "SUPER_ADMIN" && (
               <div className="flex justify-end">
                 <Button onClick={() => setAddOpen(true)}>
                   <Plus className="size-4" />
                   Add User
                 </Button>
               </div>
+              )}
 
               <Card>
                 <CardContent className="p-0">
