@@ -22,8 +22,12 @@ import {
     ShoppingCart,
     Wallet,
     Megaphone,
+    Users,
 } from "lucide-react";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+} from "recharts";
 
 interface MemberRow {
     memberId: string;
@@ -544,110 +548,137 @@ export default function PublicDashboard({
                     </Card>
                 </div>
 
-                {/* Member Summary */}
-                <Card>
-                    {/* <CardHeader>
-            <CardTitle>Member Summary</CardTitle>
-          </CardHeader> */}
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b bg-muted/50">
-                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-left font-medium text-muted-foreground">
-                                            Member
-                                        </th>
-                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
-                                            Total Fund
-                                        </th>
-                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
-                                            Total Meals
-                                        </th>
-                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
-                                            Meal Cost
-                                        </th>
-                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
-                                            Extra Cost
-                                        </th>
-                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
-                                            Total Cost
-                                        </th>
-                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-center font-medium text-muted-foreground">
-                                            Give / Take
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {stats.members.map((member) => (
-                                        <tr
-                                            key={member.memberId}
-                                            className="border-b last:border-0 hover:bg-muted/30 transition-colors"
-                                        >
-                                            <td className="px-5 py-3 font-medium">
-                                                {member.memberName}
+                {/* Member Summary + Fund Chart */}
+                <div className="grid gap-3 lg:grid-cols-3">
+                    <Card className="lg:col-span-2">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <Users className="size-4" />
+                                Member Summary
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b bg-muted/50">
+                                            <th className="sticky top-0 px-5 pb-3 pt-0 text-left font-medium text-muted-foreground">
+                                                Member
+                                            </th>
+                                            <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
+                                                Total Fund
+                                            </th>
+                                            <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
+                                                Total Meals
+                                            </th>
+                                            <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
+                                                Meal Cost
+                                            </th>
+                                            <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
+                                                Extra Cost
+                                            </th>
+                                            <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
+                                                Total Cost
+                                            </th>
+                                            <th className="sticky top-0 px-5 pb-3 pt-0 text-center font-medium text-muted-foreground">
+                                                Give / Take
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stats.members.map((member) => (
+                                            <tr
+                                                key={member.memberId}
+                                                className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                                            >
+                                                <td className="px-5 py-3 font-medium">
+                                                    {member.memberName}
+                                                </td>
+                                                <td className="px-5 py-3 text-right tabular-nums whitespace-nowrap">
+                                                    {Math.round(
+                                                        member.deposits +
+                                                            member.openingBalance,
+                                                    ) + " ৳"}
+                                                </td>
+                                                <td className="px-5 py-3 text-right tabular-nums whitespace-nowrap">
+                                                    {Math.round(member.totalMeals)}
+                                                </td>
+                                                <td className="px-5 py-3 text-right tabular-nums whitespace-nowrap">
+                                                    {Math.round(
+                                                        member.mealCost,
+                                                    ) + " ৳"}
+                                                </td>
+                                                <td className="px-5 py-3 text-right tabular-nums text-muted-foreground whitespace-nowrap">
+                                                    {Math.round(
+                                                        member.extraCost +
+                                                            member.extraCostEntries,
+                                                    ) + " ৳"}
+                                                </td>
+                                                <td className="px-5 py-3 text-right tabular-nums font-medium whitespace-nowrap">
+                                                    {Math.round(
+                                                        member.totalCost,
+                                                    ) + " ৳"}
+                                                </td>
+                                                <td className="px-5 py-3 text-center">
+                                                    <GiveTakeBadge
+                                                        balance={member.balance}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="bg-muted/60 border-t-2 border-border">
+                                            <td className="px-5 pt-5 pb-3 font-bold">Total</td>
+                                            <td className="px-5 pt-5 pb-3 text-right tabular-nums font-bold whitespace-nowrap">
+                                                {Math.round(totalRow.deposits + totalRow.openingBalance) + " ৳"}
                                             </td>
-                                            <td className="px-5 py-3 text-right tabular-nums">
-                                                {formatCurrency(
-                                                    member.deposits +
-                                                        member.openingBalance,
-                                                )}
+                                            <td className="px-5 pt-5 pb-3 text-right tabular-nums font-bold whitespace-nowrap">
+                                                {Math.round(totalRow.totalMeals)}
                                             </td>
-                                            <td className="px-5 py-3 text-right tabular-nums">
-                                                {member.totalMeals.toFixed(1)}
+                                            <td className="px-5 pt-5 pb-3 text-right tabular-nums font-bold whitespace-nowrap">
+                                                {Math.round(totalRow.mealCost) + " ৳"}
                                             </td>
-                                            <td className="px-5 py-3 text-right tabular-nums">
-                                                {formatCurrency(
-                                                    member.mealCost,
-                                                )}
+                                            <td className="px-5 pt-5 pb-3 text-right tabular-nums font-bold whitespace-nowrap">
+                                                {Math.round(totalRow.extraCost) + " ৳"}
                                             </td>
-                                            <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">
-                                                {formatCurrency(
-                                                    member.extraCost +
-                                                        member.extraCostEntries,
-                                                )}
+                                            <td className="px-5 pt-5 pb-3 text-right tabular-nums font-bold whitespace-nowrap">
+                                                {Math.round(totalRow.totalCost) + " ৳"}
                                             </td>
-                                            <td className="px-5 py-3 text-right tabular-nums font-medium">
-                                                {formatCurrency(
-                                                    member.totalCost,
-                                                )}
-                                            </td>
-                                            <td className="px-5 py-3 text-center">
+                                            <td className="px-5 pt-5 pb-3 text-center">
                                                 <GiveTakeBadge
-                                                    balance={member.balance}
+                                                    balance={totalRow.balance}
                                                 />
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="bg-muted/60">
-                                        <td className="px-5 py-3 font-bold">Total</td>
-                                        <td className="px-5 py-3 text-right tabular-nums font-bold">
-                                            {formatCurrency(totalRow.deposits + totalRow.openingBalance)}
-                                        </td>
-                                        <td className="px-5 py-3 text-right tabular-nums font-bold">
-                                            {totalRow.totalMeals.toFixed(1)}
-                                        </td>
-                                        <td className="px-5 py-3 text-right tabular-nums font-bold">
-                                            {formatCurrency(totalRow.mealCost)}
-                                        </td>
-                                        <td className="px-5 py-3 text-right tabular-nums font-bold">
-                                            {formatCurrency(totalRow.extraCost)}
-                                        </td>
-                                        <td className="px-5 py-3 text-right tabular-nums font-bold">
-                                            {formatCurrency(totalRow.totalCost)}
-                                        </td>
-                                        <td className="px-5 py-3 text-center">
-                                            <GiveTakeBadge
-                                                balance={totalRow.balance}
-                                            />
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="lg:col-span-1">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <Wallet className="size-4" />
+                                Total Fund by Member
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-3">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={stats.members.map((m) => ({
+                                    name: m.memberName,
+                                    fund: m.deposits + m.openingBalance,
+                                }))} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
+                                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
+                                    <Tooltip formatter={(v) => formatCurrency(Number(v || 0))} />
+                                    <Bar dataKey="fund" fill="hsl(142.1 76.2% 36.3%)" radius={[0, 4, 4, 0]} name="Total Fund" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* Meal Grid + Bazar side by side */}
                 <div className="grid gap-3 lg:grid-cols-3">
