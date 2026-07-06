@@ -15,7 +15,6 @@ import {
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, ExternalLink, UtensilsCrossed, Users, DollarSign, PiggyBank, BarChart3 } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
-// import { toast } from "sonner"
 
 interface SheetDetail {
   id: string

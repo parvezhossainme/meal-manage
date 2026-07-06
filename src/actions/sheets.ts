@@ -1,7 +1,7 @@
 "use server"
 
 import { prisma, shouldCountDefaultMeals } from "@/lib/db"
-import { requireAuth, requireAdmin } from "@/lib/auth"
+import { requireAuth, requireAdmin, requireSuperAdmin } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 
 const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -139,8 +139,7 @@ export async function createSheetAction(data: {
   balances?: Array<{ memberId: string; amount: number }>
 }) {
   try {
-    const session = await requireAdmin()
-    if (session.role === "MEMBER") return { error: "Only admins can create sheets" }
+    const session = await requireSuperAdmin()
 
     const { month, year, memberIds, importFromSheetId, carryForward, balances } = data
 

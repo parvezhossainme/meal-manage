@@ -73,6 +73,7 @@ export async function getMyBazarRequestsAction(sheetId: string) {
 
     const requests = await prisma.bazarRequest.findMany({
       where: { monthlySheetId: sheetId, memberId: member.id },
+      include: { member: true },
       orderBy: { createdAt: "desc" },
     })
     return { requests }

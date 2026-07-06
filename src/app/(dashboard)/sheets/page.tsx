@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { getSheetsAction } from "@/actions/sheets"
 import MealGridSection from "@/components/meals/meal-grid-section"
-// import { Button, buttonVariants } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
 export default function SheetsPage() {
@@ -45,7 +44,6 @@ export default function SheetsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          {/* <h1 className="text-2xl font-semibold tracking-tight">Meal Grid</h1> */}
           
         </div>
       </div>

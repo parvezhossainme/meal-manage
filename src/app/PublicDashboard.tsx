@@ -695,20 +695,20 @@ export default function PublicDashboard({
                         </CardHeader>
                         <CardContent className="p-0">
                             {shopping && shopping.length > 0 ?
-                                <div className="max-h-[500px] overflow-y-auto overflow-x-auto">
+                                <div className="max-h-125 overflow-y-auto overflow-x-auto">
                                     <table className="w-full text-xs table-fixed">
                                         <thead>
                                             <tr className="border-b bg-muted/50">
-                                                <th className="sticky top-0 bg-muted/50 w-[70px] px-2 py-2 text-left font-medium">
+                                                <th className="sticky top-0 bg-muted/50 w-17.5 px-2 py-2 text-left font-medium">
                                                     Date
                                                 </th>
                                                 <th className="sticky top-0 bg-muted/50 px-2 py-2 text-left font-medium">
                                                     Items
                                                 </th>
-                                                <th className="sticky top-0 bg-muted/50 w-[80px] px-2 py-2 text-left font-medium">
+                                                <th className="sticky top-0 bg-muted/50 w-20 px-2 py-2 text-left font-medium">
                                                     Who
                                                 </th>
-                                                <th className="sticky top-0 bg-muted/50 w-[80px] px-2 py-2 text-right font-medium">
+                                                <th className="sticky top-0 bg-muted/50 w-20 px-2 py-2 text-right font-medium">
                                                     Amount
                                                 </th>
                                             </tr>
@@ -782,7 +782,7 @@ export default function PublicDashboard({
                         </CardHeader>
                         <CardContent className="p-0">
                             {extraCosts && extraCosts.length > 0 ?
-                                <div className="max-h-[300px] overflow-y-auto">
+                                <div className="max-h-75 overflow-y-auto">
                                     <table className="w-full text-xs">
                                         <thead>
                                             <tr className="border-b bg-muted/50">
@@ -881,9 +881,6 @@ export default function PublicDashboard({
                                 const grandTotal = Object.values(
                                     grouped,
                                 ).reduce((s, g) => s + g.total, 0);
-                                const memberFundMap = new Map(
-                                    stats.members.map((m) => [m.memberId, m]),
-                                )
                                 return (
                                     <div className="divide-y">
                                         {stats.members.map((member) => {

@@ -147,6 +147,10 @@ export default function SettingsPage() {
   }
 
   async function handleUpdateSetting(key: string, value: string) {
+    if (currentUser?.role === "MEMBER") {
+      toast.error("Only manager can change this")
+      return
+    }
     setSavingSettings((prev) => ({ ...prev, [key]: true }))
     const result = await updateSettingAction(key, value)
     if (result.error) toast.error(result.error)
@@ -264,133 +268,146 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="users"><Users className="size-4" /> Users</TabsTrigger>
           <TabsTrigger value="months"><Calendar className="size-4" /> Months</TabsTrigger>
-          <TabsTrigger value="system"><Settings2 className="size-4" /> System Settings</TabsTrigger>
+          {currentUser?.role !== "MEMBER" && (
+            <TabsTrigger value="system"><Settings2 className="size-4" /> System Settings</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="users" className="mt-4 space-y-4">
-          <div className="flex justify-end">
-            <Button onClick={() => setAddOpen(true)}>
-              <Plus className="size-4" />
-              Add User
-            </Button>
-          </div>
-
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    {currentUser?.role === "SUPER_ADMIN" && <TableHead>Role</TableHead>}
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    {currentUser?.role === "SUPER_ADMIN" && <TableHead className="w-20"></TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={currentUser?.role === "SUPER_ADMIN" ? 6 : 4} className="py-8 text-center">
-                        <Loader2 className="mx-auto size-5 animate-spin" />
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        {currentUser?.role === "SUPER_ADMIN" && (
-                          <TableCell>
-                            <Select
-                              value={user.role}
-                              onValueChange={(v: string | null) => {
-                                if (v) handleRoleChange(user.id, v)
-                              }}
-                            >
-                              <SelectTrigger className="h-7 w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
-                                <SelectItem value="MANAGER">Manager</SelectItem>
-                                <SelectItem value="MEMBER">Member</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        )}
-                        <TableCell>
-                          <Badge variant={user.active ? "default" : "secondary"}>
-                            {user.active ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(user.createdAt)}
-                        </TableCell>
-                        {currentUser?.role === "SUPER_ADMIN" && (
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => {
-                              setNewPassword("")
-                              setPasswordDialog({ id: user.id, name: user.name })
-                            }}
-                          >
-                            <KeyRound className="size-4" />
-                          </Button>
-                        </TableCell>
-                        )}
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <Dialog open={addOpen} onOpenChange={setAddOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add User</DialogTitle>
-                <DialogDescription>Create a new user account</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleAddUser} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" value={formName} onChange={(e) => setFormName(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password (leave empty for auto-generate)</Label>
-                  <Input id="password" type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} />
-                </div>
-                {currentUser?.role === "SUPER_ADMIN" && (
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={formRole} onValueChange={(v: string | null) => { if (v) setFormRole(v) }}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
-                      <SelectItem value="MANAGER">Manager</SelectItem>
-                      <SelectItem value="MEMBER">Member</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                )}
-                <Button type="submit" disabled={saving} className="w-full">
-                  {saving ? "Creating..." : "Create User"}
+          {currentUser?.role !== "MEMBER" ? (
+            <>
+              <div className="flex justify-end">
+                <Button onClick={() => setAddOpen(true)}>
+                  <Plus className="size-4" />
+                  Add User
                 </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+              </div>
+
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        {currentUser?.role === "SUPER_ADMIN" && <TableHead>Role</TableHead>}
+                        <TableHead>Status</TableHead>
+                        <TableHead>Created</TableHead>
+                        {currentUser?.role === "SUPER_ADMIN" && <TableHead className="w-20"></TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={currentUser?.role === "SUPER_ADMIN" ? 6 : 4} className="py-8 text-center">
+                            <Loader2 className="mx-auto size-5 animate-spin" />
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        users.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell className="font-medium">{user.name}</TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            {currentUser?.role === "SUPER_ADMIN" && (
+                              <TableCell>
+                                <Select
+                                  value={user.role}
+                                  onValueChange={(v: string | null) => {
+                                    if (v) handleRoleChange(user.id, v)
+                                  }}
+                                >
+                                  <SelectTrigger className="h-7 w-32">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                                    <SelectItem value="MANAGER">Manager</SelectItem>
+                                    <SelectItem value="MEMBER">Member</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            )}
+                            <TableCell>
+                              <Badge variant={user.active ? "default" : "secondary"}>
+                                {user.active ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {formatDate(user.createdAt)}
+                            </TableCell>
+                            {currentUser?.role === "SUPER_ADMIN" && (
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => {
+                                  setNewPassword("")
+                                  setPasswordDialog({ id: user.id, name: user.name })
+                                }}
+                              >
+                                <KeyRound className="size-4" />
+                              </Button>
+                            </TableCell>
+                            )}
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              <Dialog open={addOpen} onOpenChange={setAddOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add User</DialogTitle>
+                    <DialogDescription>Create a new user account</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddUser} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input id="name" value={formName} onChange={(e) => setFormName(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password (leave empty for auto-generate)</Label>
+                      <Input id="password" type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} />
+                    </div>
+                    {currentUser?.role === "SUPER_ADMIN" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Role</Label>
+                      <Select value={formRole} onValueChange={(v: string | null) => { if (v) setFormRole(v) }}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                          <SelectItem value="MANAGER">Manager</SelectItem>
+                          <SelectItem value="MEMBER">Member</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    )}
+                    <Button type="submit" disabled={saving} className="w-full">
+                      {saving ? "Creating..." : "Create User"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                You do not have permission to manage users.
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
+        {currentUser?.role !== "MEMBER" && (
         <TabsContent value="system" className="mt-4 space-y-4">
           <Card>
             <CardHeader>
@@ -496,14 +513,17 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
         <TabsContent value="months" className="mt-4 space-y-4">
+          {currentUser?.role === "SUPER_ADMIN" && (
           <div className="flex justify-end">
             <Button onClick={() => setCreateMonthOpen(true)}>
               <Calendar className="size-4" />
               Create New Month
             </Button>
           </div>
+          )}
           <Card>
             <CardContent className="p-6 text-center text-sm text-muted-foreground">
               Create a new monthly sheet from here. After creation, you can manage meals, expenses, and other data from the respective sections.
