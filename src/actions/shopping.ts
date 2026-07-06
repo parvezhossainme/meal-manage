@@ -133,7 +133,12 @@ export async function getShoppingSummaryAction(sheetId: string) {
 
     const totalShopping = shopping.reduce((sum, s) => sum + s.totalCost, 0)
     const topShopper = shopping.length > 0
-      ? shopping.reduce((prev, curr) => (prev.totalCost > curr.totalCost ? prev : curr)).purchasedBy.name
+      ? Object.entries(
+          shopping.reduce<Record<string, number>>((acc, s) => {
+            acc[s.purchasedBy.name] = (acc[s.purchasedBy.name] || 0) + 1
+            return acc
+          }, {}),
+        ).sort((a, b) => b[1] - a[1])[0][0]
       : "N/A"
     const largestPurchase = shopping.length > 0
       ? Math.max(...shopping.map((s) => s.totalCost))

@@ -37,9 +37,9 @@ interface NavItem {
 const navItems: Record<string, NavItem[]> = {
   SUPER_ADMIN: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/sheets", label: "Monthly Sheets", icon: Calendar },
+    { href: "/sheets", label: "Meal Sheets", icon: Calendar },
     { href: "/members", label: "Members", icon: Users },
-    { href: "/shopping", label: "Shopping", icon: ShoppingCart },
+    { href: "/shopping", label: "Bazar", icon: ShoppingCart },
     { href: "/extra-costs", label: "Extra Cost", icon: CircleDollarSign },
     { href: "/funds", label: "Funds", icon: PiggyBank },
     { href: "/reports", label: "Reports", icon: BarChart3 },
@@ -49,9 +49,9 @@ const navItems: Record<string, NavItem[]> = {
   ],
   MANAGER: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/sheets", label: "Monthly Sheets", icon: Calendar },
+    { href: "/sheets", label: "Meal Sheets", icon: Calendar },
     { href: "/members", label: "Members", icon: Users },
-    { href: "/shopping", label: "Shopping", icon: ShoppingCart },
+    { href: "/shopping", label: "Bazar", icon: ShoppingCart },
     { href: "/extra-costs", label: "Extra Cost", icon: CircleDollarSign },
     { href: "/funds", label: "Funds", icon: PiggyBank },
     { href: "/reports", label: "Reports", icon: BarChart3 },
@@ -59,9 +59,9 @@ const navItems: Record<string, NavItem[]> = {
     { href: "/settings", label: "Settings", icon: Settings },
   ],
   MEMBER: [
-    { href: "/sheets", label: "Monthly Sheets", icon: Calendar },
+    { href: "/sheets", label: "Meal Sheets", icon: Calendar },
     { href: "/members", label: "Members", icon: Users },
-    { href: "/shopping", label: "Shopping", icon: ShoppingCart },
+    { href: "/shopping", label: "Bazar", icon: ShoppingCart },
     { href: "/extra-costs", label: "Extra Cost", icon: CircleDollarSign },
     { href: "/reports", label: "My Reports", icon: FileText },
     { href: "/settings", label: "Settings", icon: Settings },
