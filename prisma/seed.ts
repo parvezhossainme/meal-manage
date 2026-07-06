@@ -66,7 +66,7 @@ async function main() {
   // Add default settings
   const defaultSettings = {
     app_name: "Meal Manage",
-    currency: "BDT",
+    currency: "৳",
     main_category: "Main",
   }
   for (const [key, value] of Object.entries(defaultSettings)) {

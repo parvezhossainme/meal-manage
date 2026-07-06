@@ -54,13 +54,11 @@ export default function MembersPage() {
   const [formPhone, setFormPhone] = useState("")
   const [formEmail, setFormEmail] = useState("")
   const [saving, setSaving] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [userRole, setUserRole] = useState("")
 
   useEffect(() => {
     getCurrentUserAction().then((result) => {
-      if (result.user && result.user.role !== "MEMBER") {
-        setIsAdmin(true)
-      }
+      if (result.user) setUserRole(result.user.role)
     })
   }, [])
 
@@ -74,6 +72,7 @@ export default function MembersPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadMembers()
   }, [loadMembers])
 
@@ -156,7 +155,7 @@ export default function MembersPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
           <p className="text-sm text-muted-foreground">Manage meal participants</p>
         </div>
-        {isAdmin && (
+        {userRole !== "MEMBER" && (
           <Button onClick={openAdd}>
             <Plus className="size-4" />
             Add Member
@@ -201,7 +200,9 @@ export default function MembersPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((member) => (
+                filtered
+                  .filter((member) => !(userRole === "MANAGER" && member.user?.role === "SUPER_ADMIN"))
+                  .map((member) => (
                   <TableRow key={member.id}>
                     <TableCell className="font-medium">{member.name}</TableCell>
                     <TableCell>{member.phone || "—"}</TableCell>
@@ -222,7 +223,7 @@ export default function MembersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {isAdmin && (
+                        {userRole !== "MEMBER" && (
                           <>
                             <Switch checked={member.active} onCheckedChange={() => handleToggle(member.id)} />
                             <Button variant="ghost" size="icon-sm" onClick={() => openEdit(member.id)}>

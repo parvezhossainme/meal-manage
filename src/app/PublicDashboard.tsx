@@ -100,7 +100,7 @@ function GiveTakeBadge({ balance }: { balance: number }) {
                 variant="outline"
                 className="gap-1 border-green-300 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400 dark:border-green-800"
             >
-                <span className="font-bold">+ {Math.round(balance)} BDT</span>
+                <span className="font-bold">+ {Math.round(balance)} ৳</span>
             </Badge>
         );
     }
@@ -110,7 +110,7 @@ function GiveTakeBadge({ balance }: { balance: number }) {
                 variant="outline"
                 className="gap-1 border-red-300 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400 dark:border-red-800"
             >
-                <span className="font-bold">{Math.round(balance)} BDT</span>
+                <span className="font-bold">{Math.round(balance)} ৳</span>
             </Badge>
         );
     }
@@ -554,25 +554,25 @@ export default function PublicDashboard({
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b bg-muted/50">
-                                        <th className="sticky top-0 px-3 py-3 text-left font-medium text-muted-foreground">
+                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-left font-medium text-muted-foreground">
                                             Member
                                         </th>
-                                        <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">
+                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
                                             Total Fund
                                         </th>
-                                        <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">
+                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
                                             Total Meals
                                         </th>
-                                        <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">
+                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
                                             Meal Cost
                                         </th>
-                                        <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">
+                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
                                             Extra Cost
                                         </th>
-                                        <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">
+                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-right font-medium text-muted-foreground">
                                             Total Cost
                                         </th>
-                                        <th className="sticky top-0 px-3 py-3 text-center font-medium text-muted-foreground">
+                                        <th className="sticky top-0 px-5 pb-3 pt-0 text-center font-medium text-muted-foreground">
                                             Give / Take
                                         </th>
                                     </tr>
@@ -583,34 +583,35 @@ export default function PublicDashboard({
                                             key={member.memberId}
                                             className="border-b last:border-0 hover:bg-muted/30 transition-colors"
                                         >
-                                            <td className="px-3 py-3 font-medium">
+                                            <td className="px-5 py-3 font-medium">
                                                 {member.memberName}
                                             </td>
-                                            <td className="px-3 py-3 text-right tabular-nums">
+                                            <td className="px-5 py-3 text-right tabular-nums">
                                                 {formatCurrency(
-                                                    member.deposits,
+                                                    member.deposits +
+                                                        member.openingBalance,
                                                 )}
                                             </td>
-                                            <td className="px-3 py-3 text-right tabular-nums">
+                                            <td className="px-5 py-3 text-right tabular-nums">
                                                 {member.totalMeals.toFixed(1)}
                                             </td>
-                                            <td className="px-3 py-3 text-right tabular-nums">
+                                            <td className="px-5 py-3 text-right tabular-nums">
                                                 {formatCurrency(
                                                     member.mealCost,
                                                 )}
                                             </td>
-                                            <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
+                                            <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">
                                                 {formatCurrency(
                                                     member.extraCost +
                                                         member.extraCostEntries,
                                                 )}
                                             </td>
-                                            <td className="px-3 py-3 text-right tabular-nums font-medium">
+                                            <td className="px-5 py-3 text-right tabular-nums font-medium">
                                                 {formatCurrency(
                                                     member.totalCost,
                                                 )}
                                             </td>
-                                            <td className="px-3 py-3 text-center">
+                                            <td className="px-5 py-3 text-center">
                                                 <GiveTakeBadge
                                                     balance={member.balance}
                                                 />
@@ -619,24 +620,24 @@ export default function PublicDashboard({
                                     ))}
                                 </tbody>
                                 <tfoot>
-                                    <tr className="border-t bg-muted/30 font-medium">
-                                        <td className="px-3 py-3">Total</td>
-                                        <td className="px-3 py-3 text-right tabular-nums">
-                                            {formatCurrency(totalRow.deposits)}
+                                    <tr className="bg-muted/60">
+                                        <td className="px-5 py-3 font-bold">Total</td>
+                                        <td className="px-5 py-3 text-right tabular-nums font-bold">
+                                            {formatCurrency(totalRow.deposits + totalRow.openingBalance)}
                                         </td>
-                                        <td className="px-3 py-3 text-right tabular-nums">
+                                        <td className="px-5 py-3 text-right tabular-nums font-bold">
                                             {totalRow.totalMeals.toFixed(1)}
                                         </td>
-                                        <td className="px-3 py-3 text-right tabular-nums">
+                                        <td className="px-5 py-3 text-right tabular-nums font-bold">
                                             {formatCurrency(totalRow.mealCost)}
                                         </td>
-                                        <td className="px-3 py-3 text-right tabular-nums">
+                                        <td className="px-5 py-3 text-right tabular-nums font-bold">
                                             {formatCurrency(totalRow.extraCost)}
                                         </td>
-                                        <td className="px-3 py-3 text-right tabular-nums">
+                                        <td className="px-5 py-3 text-right tabular-nums font-bold">
                                             {formatCurrency(totalRow.totalCost)}
                                         </td>
-                                        <td className="px-3 py-3 text-center">
+                                        <td className="px-5 py-3 text-center">
                                             <GiveTakeBadge
                                                 balance={totalRow.balance}
                                             />

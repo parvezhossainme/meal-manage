@@ -123,8 +123,8 @@ export default function SheetDetailPage() {
           <Label className="text-sm whitespace-nowrap">Switch Month:</Label>
           <Select value={sheet.id} onValueChange={(v: string | null) => { if (v) handleSheetChange(v) }}>
             <SelectTrigger className="w-44">
-              <SelectValue>
-                {(value: string | null) => sheets.find(s => s.id === value)?.label || value}
+              <SelectValue placeholder="Switch month...">
+                {(value: string | null) => value ? (sheets.find(s => s.id === value)?.label || value) : null}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>

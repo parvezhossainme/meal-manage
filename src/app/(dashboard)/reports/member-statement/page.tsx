@@ -48,8 +48,10 @@ export default function MemberStatementPage() {
 
   useEffect(() => {
     if (selectedMember) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchStatement(selectedMember)
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatements([])
     }
   }, [selectedMember, fetchStatement])

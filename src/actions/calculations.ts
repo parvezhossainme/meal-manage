@@ -249,11 +249,19 @@ export async function getDashboardStatsAction(sheetId?: string) {
       ? Math.round((totalExtraCostEntries / activeMembers.length) * 100) / 100
       : 0
 
-    const expenseByCategory: Record<string, number> = {}
+    const expenseByCategory: Record<string, number> = {
+      "Bazar / Shopping": 0,
+      Extra: 0,
+    }
     for (const e of expenses) {
       const catName = e.category?.name || "Other"
-      expenseByCategory[catName] = (expenseByCategory[catName] || 0) + e.amount
+      if (catName === MAIN_CATEGORY_NAME) {
+        expenseByCategory["Bazar / Shopping"] += e.amount
+      } else {
+        expenseByCategory["Extra"] += e.amount
+      }
     }
+    expenseByCategory["Extra"] += totalExtraCostEntries
 
     const combinedExtraCostPerMember = Math.round((extraCostPerMember + extraCostPerMemberFromEntries) * 100) / 100
 

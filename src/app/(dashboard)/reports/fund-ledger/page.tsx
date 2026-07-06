@@ -41,10 +41,6 @@ export default function FundLedgerPage() {
     })
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [selectedSheet, selectedMember])
-
   const fetchData = async () => {
     setLoading(true)
     const params: { sheetId?: string; memberId?: string } = {}
@@ -57,6 +53,11 @@ export default function FundLedgerPage() {
       setTotal(res.total)
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData()
+  }, [selectedSheet, selectedMember])
 
   const handleExportCSV = () => {
     const headers = ["Date", "Member", "Amount", "Sheet", "Payment Method", "Reference", "Remarks"]

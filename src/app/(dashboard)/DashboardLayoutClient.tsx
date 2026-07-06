@@ -1,9 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Header } from "@/components/layout/Header"
 import type { SessionUser } from "@/lib/auth"
+
+const adminOnlyRoutes = ["/audit-logs", "/announcements", "/funds"]
 
 export function DashboardLayoutClient({
   user,
@@ -13,6 +16,18 @@ export function DashboardLayoutClient({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (user.role === "MEMBER" && adminOnlyRoutes.some(route => pathname.startsWith(route))) {
+      router.replace("/sheets")
+    }
+  }, [user.role, pathname, router])
+
+  if (user.role === "MEMBER" && adminOnlyRoutes.some(route => pathname.startsWith(route))) {
+    return null
+  }
 
   return (
     <div className="flex h-screen">

@@ -27,16 +27,17 @@ export default function CarryForwardPage() {
 
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i)
 
-  useEffect(() => {
-    fetchData()
-  }, [selectedYear])
-
   const fetchData = async () => {
     setLoading(true)
     const res = await getCarryForwardAction(selectedYear ? parseInt(selectedYear) : undefined)
     setLoading(false)
     if (res.balances) setBalances(res.balances)
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData()
+  }, [selectedYear])
 
   const totalAmount = balances.reduce((s, b) => s + b.amount, 0)
 

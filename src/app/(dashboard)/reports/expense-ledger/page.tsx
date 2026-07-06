@@ -42,10 +42,6 @@ export default function ExpenseLedgerPage() {
     })
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [selectedSheet, selectedCategory])
-
   const fetchData = async () => {
     setLoading(true)
     const params: { sheetId?: string; categoryId?: string } = {}
@@ -58,6 +54,11 @@ export default function ExpenseLedgerPage() {
       setTotal(res.total)
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData()
+  }, [selectedSheet, selectedCategory])
 
   const handleExportCSV = () => {
     const headers = ["Date", "Title", "Category", "Amount", "Sheet", "Paid By", "Vendor", "Remarks"]

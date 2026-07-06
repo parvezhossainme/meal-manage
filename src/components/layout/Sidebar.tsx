@@ -133,11 +133,11 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           <div className="border-b border-sidebar-border px-4 py-2.5">
             <Select value={currentSheetId} onValueChange={(v: string | null) => { if (v) handleSheetChange(v) }}>
               <SelectTrigger className="w-full h-9 text-sm">
-                <SelectValue>
-                  {(value: string | null) => sheets.find(s => s.id === value)?.label || "Select month"}
+                <SelectValue placeholder="Select month">
+                  {(value: string | null) => value ? (sheets.find(s => s.id === value)?.label || value) : null}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent side="bottom" align="start">
                 {sheets.map((s) => (
                   <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
                 ))}

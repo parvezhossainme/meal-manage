@@ -76,6 +76,36 @@ const COLORS = [
     "#84cc16",
 ];
 
+function GiveTakeBadge({ balance }: { balance: number }) {
+    if (balance > 0) {
+        return (
+            <Badge
+                variant="outline"
+                className="gap-1 border-green-300 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400 dark:border-green-800 text-sm px-3 py-1.5"
+            >
+                <span className="font-bold">
+                    +{formatCurrency(balance)}
+                </span>
+            </Badge>
+        );
+    }
+    if (balance < 0) {
+        return (
+            <Badge
+                variant="outline"
+                className="gap-1 border-red-300 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400 dark:border-red-800 text-sm px-3 py-1.5"
+            >
+                <span className="font-bold">{formatCurrency(balance)}</span>
+            </Badge>
+        );
+    }
+    return (
+        <Badge variant="secondary" className="gap-1 text-sm px-3 py-1.5">
+            Settled
+        </Badge>
+    );
+}
+
 export default function MemberDashboardPage() {
     const params = useParams();
     const memberId = params.id as string;
@@ -101,38 +131,9 @@ export default function MemberDashboardPage() {
     }, [memberId]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadData();
     }, [loadData]);
-
-    function GiveTakeBadge({ balance }: { balance: number }) {
-        if (balance > 0) {
-            return (
-                <Badge
-                    variant="outline"
-                    className="gap-1 border-green-300 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400 dark:border-green-800 text-sm px-3 py-1.5"
-                >
-                    <span className="font-bold">
-                        +{formatCurrency(balance)}
-                    </span>
-                </Badge>
-            );
-        }
-        if (balance < 0) {
-            return (
-                <Badge
-                    variant="outline"
-                    className="gap-1 border-red-300 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400 dark:border-red-800 text-sm px-3 py-1.5"
-                >
-                    <span className="font-bold">{formatCurrency(balance)}</span>
-                </Badge>
-            );
-        }
-        return (
-            <Badge variant="secondary" className="gap-1 text-sm px-3 py-1.5">
-                Settled
-            </Badge>
-        );
-    }
 
     if (loading) {
         return (

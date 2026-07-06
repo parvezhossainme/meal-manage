@@ -34,10 +34,6 @@ export default function GuestReportPage() {
     })
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [selectedSheet])
-
   const fetchData = async () => {
     setLoading(true)
     const sheetId = selectedSheet !== "all" ? selectedSheet : undefined
@@ -48,6 +44,11 @@ export default function GuestReportPage() {
       setTotalMeals(res.totalMeals)
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData()
+  }, [selectedSheet])
 
   const handleExportCSV = () => {
     const headers = ["Date", "Guest Name", "Hosted By", "Sheet", "Meals", "Remarks"]

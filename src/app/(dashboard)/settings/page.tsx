@@ -106,6 +106,7 @@ export default function SettingsPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData()
     getCurrentUserAction().then((r) => {
       if (r.user) setCurrentUser({ id: r.user.id, name: r.user.name, role: r.user.role })

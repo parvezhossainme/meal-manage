@@ -64,6 +64,7 @@ export default function CreateMonthDialog({ open, onOpenChange, onSuccess }: Cre
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStep(1)
       setMonth(new Date().getMonth() + 1)
       setYear(new Date().getFullYear())

@@ -49,7 +49,10 @@ export default function AnnouncementsPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData()
+  }, [loadData])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()

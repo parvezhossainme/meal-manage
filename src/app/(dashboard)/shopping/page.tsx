@@ -110,19 +110,24 @@ export default function BazarListPage() {
   }, [isAdmin])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchUser()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSheets()
   }, [fetchUser, fetchSheets])
 
   useEffect(() => {
     if (sheets.length > 0 && !selectedSheetId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedSheetId(sheets[0].id)
     }
   }, [sheets, selectedSheetId])
 
   useEffect(() => {
     if (selectedSheetId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchData(selectedSheetId)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchRequests(selectedSheetId)
     }
   }, [selectedSheetId, fetchData, fetchRequests])

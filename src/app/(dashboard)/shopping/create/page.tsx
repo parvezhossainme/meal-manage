@@ -131,9 +131,9 @@ export default function CreateBazarPage() {
                 onValueChange={(v: string | null) => { if (v) form.setValue("purchasedById", v, { shouldValidate: true }) }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select person">
-                    {(value: string | null) => value ? (members.find(m => m.id === value)?.name || value) : null}
-                  </SelectValue>
+                    <SelectValue placeholder="Select person">
+                      {(value: string | null) => value ? (members.find(m => m.id === value)?.name || value) : null}
+                    </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {members.map((m) => (
@@ -160,7 +160,7 @@ export default function CreateBazarPage() {
             <div className="space-y-2">
               <Label htmlFor="totalCost">Total Cost *</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">৳</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">৳</span>
                 <Input
                   id="totalCost"
                   type="number"

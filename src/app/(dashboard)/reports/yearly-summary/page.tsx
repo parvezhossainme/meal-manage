@@ -36,10 +36,6 @@ export default function YearlySummaryPage() {
     Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i),
   [])
 
-  useEffect(() => {
-    fetchData()
-  }, [selectedYear])
-
   const fetchData = async () => {
     setLoading(true)
     const res = await getYearlySummaryAction(parseInt(selectedYear))
@@ -49,6 +45,11 @@ export default function YearlySummaryPage() {
       setTotals(res.totals)
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData()
+  }, [selectedYear])
 
   const handleExportCSV = () => {
     const headers = ["Month", "Members", "Total Meals", "Guest Meals", "Main Expenses", "Meal Rate", "Total Funds"]

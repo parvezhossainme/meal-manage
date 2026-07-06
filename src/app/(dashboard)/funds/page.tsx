@@ -262,7 +262,7 @@ export default function FundLedgerPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 pt-2">
         <PiggyBank className="size-6 text-muted-foreground" />
         <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">Fund Ledger</h1>
@@ -346,14 +346,10 @@ export default function FundLedgerPage() {
                       </td>
                       <td className="px-4 py-3 font-medium">{member.memberName}</td>
                       <td className="px-4 py-3 text-right tabular-nums">
-                        {member.openingBalance > 0
-                          ? formatCurrency(member.openingBalance)
-                          : <span className="text-muted-foreground">—</span>}
+                        {formatCurrency(member.openingBalance)}
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums font-medium">
-                        {deposits > 0
-                          ? formatCurrency(deposits)
-                          : <span className="text-muted-foreground">—</span>}
+                        {formatCurrency(deposits)}
                       </td>
                       <td className="px-4 py-3 text-right font-semibold tabular-nums">
                         {formatCurrency(balance)}
@@ -373,7 +369,7 @@ export default function FundLedgerPage() {
                     </tr>
                     {open && (
                       <tr key={`${member.memberId}-details`}>
-                        <td colSpan={isAdmin ? 6 : 5} className="px-4 pb-4">
+                        <td colSpan={isAdmin ? 6 : 5} className="px-4 pt-4 pb-4">
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                               <thead>
@@ -389,8 +385,7 @@ export default function FundLedgerPage() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {member.openingBalance > 0 && (
-                                  <tr className="border-b bg-muted/30">
+                                <tr className="border-b bg-muted/30">
                                     <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">—</td>
                                     <td className="py-2 pr-3">
                                       <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" variant="outline">
@@ -417,8 +412,7 @@ export default function FundLedgerPage() {
                                       {formatCurrency(member.openingBalance)}
                                     </td>
                                     {isAdmin && <td className="py-2 text-right"></td>}
-                                  </tr>
-                                )}
+                                </tr>
                                 {member.transactions.map((tx) => (
                                   <tr key={tx.id} className="border-b last:border-0">
                                     <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">

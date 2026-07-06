@@ -241,7 +241,7 @@ export default function ExtraCostsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="totalCost">Total Cost</Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">৳</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">৳</span>
                     <Input
                       id="totalCost"
                       type="number"
