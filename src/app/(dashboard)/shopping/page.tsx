@@ -110,9 +110,7 @@ export default function BazarListPage() {
   }, [isAdmin])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchUser()
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSheets()
   }, [fetchUser, fetchSheets])
 

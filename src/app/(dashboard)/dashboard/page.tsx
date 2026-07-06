@@ -105,6 +105,7 @@ function GiveTakeBadge({ balance }: { balance: number }) {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [memberStats, setMemberStats] = useState<MemberStats | null>(null)
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<string>("")
   const [memberId, setMemberId] = useState<string | null>(null)
@@ -120,9 +121,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (userRole === "MEMBER" && memberId) {
-      getMemberDashboardAction(memberId).then((result) => {
-        if (result.stats) {
-          setMemberStats(result.stats as MemberStats)
+      Promise.all([
+        getMemberDashboardAction(memberId),
+        getDashboardStatsAction(),
+      ]).then(([memberResult, dashboardResult]) => {
+        if (memberResult.stats) {
+          setMemberStats(memberResult.stats as MemberStats)
+        }
+        if (dashboardResult.stats) {
+          setDashboardData(dashboardResult.stats as DashboardData)
         }
         setLoading(false)
       })
@@ -239,6 +246,83 @@ export default function DashboardPage() {
             </dl>
           </CardContent>
         </Card>
+
+        {dashboardData && dashboardData.members && dashboardData.members.length > 0 && (
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Member Meals</CardTitle>
+                <BarChart3 className="size-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="p-3">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={dashboardData.members} layout="vertical" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="memberName" tick={{ fontSize: 11 }} width={70} />
+                    <Tooltip formatter={(v) => (v ? Number(v).toFixed(1) : "0")} />
+                    <Bar dataKey="totalMeals" fill="hsl(221.2 83.2% 53.3%)" radius={[0, 4, 4, 0]} name="Meals" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Member Balance</CardTitle>
+                <TrendingUp className="size-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="p-3">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={dashboardData.members} layout="vertical" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="memberName" tick={{ fontSize: 11 }} width={70} />
+                    <Tooltip formatter={(v) => formatCurrency(Number(v || 0))} />
+                    <Bar dataKey="balance" fill="hsl(142.1 76.2% 36.3%)" radius={[0, 4, 4, 0]} name="Balance" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Expenses by Category</CardTitle>
+                <PieChartIcon className="size-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="p-3">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={Object.entries(dashboardData.expenseByCategory).map(([name, value]) => ({ name, value }))}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      innerRadius={40}
+                      paddingAngle={2}
+                    >
+                      {Object.keys(dashboardData.expenseByCategory).map((_, i) => (
+                        <Cell key={i} fill={`hsl(${(i * 360) / Object.keys(dashboardData.expenseByCategory).length + 200}, 70%, 50%)`} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => formatCurrency(Number(v || 0))} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-wrap justify-center gap-3 text-xs">
+                  {Object.entries(dashboardData.expenseByCategory).map(([name, value], i) => (
+                    <span key={name} className="flex items-center gap-1.5">
+                      <span
+                        className="inline-block size-2.5 rounded-full"
+                        style={{ backgroundColor: `hsl(${(i * 360) / Object.keys(dashboardData.expenseByCategory).length + 200}, 70%, 50%)` }}
+                      />
+                      {name}: {formatCurrency(Number(value))}
+                    </span>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     )
   }
