@@ -23,6 +23,8 @@ import {
     Wallet,
     Megaphone,
     Users,
+    ChevronDown,
+    ChevronRight,
 } from "lucide-react";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import {
@@ -291,6 +293,16 @@ export default function PublicDashboard({
     const [error, setError] = useState<string | null>(null);
     const [announcements, setAnnouncements] = useState<Array<{ id: string; title: string; content: string; createdAt: Date }>>([]);
     const [announcementOpen, setAnnouncementOpen] = useState(false);
+    const [expandedFunds, setExpandedFunds] = useState<Set<string>>(new Set());
+
+    const toggleFundMember = (memberId: string) => {
+        setExpandedFunds((prev) => {
+            const next = new Set(prev);
+            if (next.has(memberId)) next.delete(memberId);
+            else next.add(memberId);
+            return next;
+        });
+    };
 
     useEffect(() => {
         getPublicDashboardAction().then((result: Record<string, unknown>) => {
@@ -925,19 +937,29 @@ export default function PublicDashboard({
                                                     key={member.memberId}
                                                     className="p-3"
                                                 >
-                                                    <div className="mb-1 flex items-center justify-between">
-                                                        <span className="text-sm font-semibold">
-                                                            {member.memberName}
-                                                        </span>
+                                                    <div
+                                                        className="flex cursor-pointer items-center justify-between"
+                                                        onClick={() => toggleFundMember(member.memberId)}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            {expandedFunds.has(member.memberId) ? (
+                                                                <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+                                                            ) : (
+                                                                <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+                                                            )}
+                                                            <span className="text-sm font-semibold">
+                                                                {member.memberName}
+                                                            </span>
+                                                        </div>
                                                         <span className="text-sm font-bold tabular-nums text-green-600">
                                                             {formatCurrency(totalBalance)}
                                                         </span>
                                                     </div>
-                                                    <div className="mb-2 flex items-center gap-3 text-xs text-muted-foreground">
+                                                    <div className="mb-2 mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                                                         <span>Previous Month: <strong>{formatCurrency(carried)}</strong></span>
                                                         <span>Deposit: <strong>{formatCurrency(deposit)}</strong></span>
                                                     </div>
-                                                    {txns.length > 0 && (
+                                                    {expandedFunds.has(member.memberId) && txns.length > 0 && (
                                                         <div className="space-y-1">
                                                             {txns.map((f) => (
                                                                 <div
@@ -947,8 +969,8 @@ export default function PublicDashboard({
                                                                     <span>
                                                                         {formatDateShort(f.date)}
                                                                     </span>
-                                                                    <span className="tabular-nums font-medium text-green-600">
-                                                                        + {formatCurrency(f.amount)}
+                                                                    <span className={`tabular-nums font-medium ${f.amount < 0 ? "text-red-600" : "text-green-600"}`}>
+                                                                        {f.amount < 0 ? formatCurrency(f.amount) : `+ ${formatCurrency(f.amount)}`}
                                                                     </span>
                                                                 </div>
                                                             ))}

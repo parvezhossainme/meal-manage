@@ -53,12 +53,19 @@ export const guestMealSchema = z.object({
 export const fundTransactionSchema = z.object({
   monthlySheetId: z.string(),
   memberId: z.string().min(1, "Member is required"),
-  amount: z.number().positive("Amount must be positive"),
-  type: z.enum(["Deposit", "CarryForward", "Adjustment", "Refund"]).default("Deposit"),
+  amount: z.number(),
+  type: z.enum(["Deposit", "CarryForward", "Adjustment"]).default("Deposit"),
   paymentMethod: z.enum(["Cash", "Bkash", "Nagad", "Bank"]).optional(),
   reference: z.string().optional(),
   remarks: z.string().optional(),
   date: z.string(),
+}).superRefine((data, ctx) => {
+  if (data.amount === 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Amount cannot be zero", path: ["amount"] })
+  }
+  if (data.type !== "Adjustment" && data.type !== "CarryForward" && data.amount < 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Amount must be positive", path: ["amount"] })
+  }
 })
 
 export const shoppingSchema = z.object({
@@ -132,19 +139,26 @@ export const fundTransactionUpdateSchema = z.object({
   id: z.string(),
   monthlySheetId: z.string(),
   memberId: z.string().min(1, "Member is required"),
-  amount: z.number().positive("Amount must be positive"),
-  type: z.enum(["Deposit", "CarryForward", "Adjustment", "Refund"]).default("Deposit"),
+  amount: z.number(),
+  type: z.enum(["Deposit", "CarryForward", "Adjustment"]).default("Deposit"),
   paymentMethod: z.enum(["Cash", "Bkash", "Nagad", "Bank"]).nullable().optional(),
   reference: z.string().nullable().optional(),
   remarks: z.string().nullable().optional(),
   date: z.string(),
+}).superRefine((data, ctx) => {
+  if (data.amount === 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Amount cannot be zero", path: ["amount"] })
+  }
+  if (data.type !== "Adjustment" && data.type !== "CarryForward" && data.amount < 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Amount must be positive", path: ["amount"] })
+  }
 })
 
 export const extraCostSchema = z.object({
   monthlySheetId: z.string(),
   date: z.string(),
   description: z.string().min(1, "Description is required"),
-  totalCost: z.number().positive("Total cost must be positive"),
+  totalCost: z.number().refine(val => val !== 0, "Total cost cannot be zero"),
 })
 
 export type DailyNoteInput = z.infer<typeof dailyNoteSchema>

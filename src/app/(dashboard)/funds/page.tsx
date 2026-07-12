@@ -39,8 +39,6 @@ function typeBadgeClass(type: string) {
       return `${base} bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400`
     case "Adjustment":
       return `${base} bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400`
-    case "Refund":
-      return `${base} bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400`
     default:
       return `${base} bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400`
   }
@@ -152,7 +150,7 @@ export default function FundLedgerPage() {
       return
     }
     const amount = parseFloat(addAmount)
-    if (isNaN(amount) || amount <= 0) {
+    if (isNaN(amount) || (addType !== "Adjustment" && addType !== "CarryForward" && amount <= 0)) {
       toast.error("Amount must be positive")
       return
     }
@@ -210,7 +208,7 @@ export default function FundLedgerPage() {
     if (!editingTx) return
     setEditSaving(true)
     const amount = parseFloat(editAmount)
-    if (isNaN(amount) || amount <= 0) {
+    if (isNaN(amount) || (editType !== "Adjustment" && editType !== "CarryForward" && amount <= 0)) {
       toast.error("Amount must be positive")
       setEditSaving(false)
       return
@@ -262,19 +260,13 @@ export default function FundLedgerPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 pt-2">
-        <PiggyBank className="size-6 text-muted-foreground" />
-        <div className="flex-1">
+      <div className="flex flex-wrap items-center gap-3 pt-2">
+        <PiggyBank className="size-6 text-muted-foreground shrink-0" />
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Fund Ledger</h1>
-          <p className="text-sm text-muted-foreground">Per-member fund transaction history</p>
+          <p className="text-sm text-muted-foreground">Fund transaction history</p>
         </div>
-        {isAdmin && (
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus className="size-4 mr-1" />
-            Add Fund
-          </Button>
-        )}
-        <div className="w-64">
+        <div className="w-full sm:w-64">
           <Select value={selectedSheetId} onValueChange={(v: string | null) => { if (v) setSelectedSheetId(v) }}>
             <SelectTrigger>
               <SelectValue placeholder="Select a sheet">
@@ -288,6 +280,12 @@ export default function FundLedgerPage() {
             </SelectContent>
           </Select>
         </div>
+        {isAdmin && (
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="size-4 mr-1" />
+            Add Fund
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -316,12 +314,12 @@ export default function FundLedgerPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider">
-                <th className="text-left font-medium px-4 py-3 w-8"></th>
-                <th className="text-left font-medium px-4 py-3">Member</th>
-                <th className="text-right font-medium px-4 py-3">Carried</th>
-                <th className="text-right font-medium px-4 py-3">Deposit</th>
-                <th className="text-right font-medium px-4 py-3">Total</th>
-                {isAdmin && <th className="text-right font-medium px-4 py-3 w-16">Actions</th>}
+                <th className="text-left font-medium px-2 sm:px-4 py-3 w-8"></th>
+                <th className="text-left font-medium px-2 sm:px-4 py-3">Member</th>
+                      <th className="text-right font-medium px-2 sm:px-4 py-3 whitespace-nowrap hidden sm:table-cell">Carried</th>
+                <th className="text-right font-medium px-2 sm:px-4 py-3 whitespace-nowrap">Deposit</th>
+                <th className="text-right font-medium px-2 sm:px-4 py-3 whitespace-nowrap">Total</th>
+                {isAdmin && <th className="text-right font-medium px-2 sm:px-4 py-3 w-16 whitespace-nowrap">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -337,28 +335,28 @@ export default function FundLedgerPage() {
                       className="border-b hover:bg-muted/30 cursor-pointer"
                       onClick={() => toggleMember(member.memberId)}
                     >
-                      <td className="px-4 py-3">
+                      <td className="px-2 sm:px-4 py-3">
                         {open ? (
                           <ChevronDown className="size-4 text-muted-foreground" />
                         ) : (
                           <ChevronRight className="size-4 text-muted-foreground" />
                         )}
                       </td>
-                      <td className="px-4 py-3 font-medium">{member.memberName}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">
+                      <td className="px-2 sm:px-4 py-3 font-medium truncate max-w-25 sm:max-w-none">{member.memberName}</td>
+                      <td className="px-2 sm:px-4 py-3 text-right tabular-nums whitespace-nowrap hidden sm:table-cell">
                         {formatCurrency(member.openingBalance)}
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums font-medium">
+                      <td className="px-2 sm:px-4 py-3 text-right tabular-nums font-medium whitespace-nowrap">
                         {formatCurrency(deposits)}
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold tabular-nums">
+                      <td className="px-2 sm:px-4 py-3 text-right font-semibold tabular-nums whitespace-nowrap">
                         {formatCurrency(balance)}
                       </td>
                       {isAdmin && (
-                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-2 sm:px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
-                            onClick={() => setAddOpen(true)}
+                            onClick={() => { setAddMemberId(member.memberId); setAddOpen(true) }}
                             className="p-1 rounded hover:bg-muted transition-colors"
                             title="Add fund"
                           >
@@ -369,19 +367,16 @@ export default function FundLedgerPage() {
                     </tr>
                     {open && (
                       <tr key={`${member.memberId}-details`}>
-                        <td colSpan={isAdmin ? 6 : 5} className="px-4 pt-4 pb-4">
+                        <td colSpan={isAdmin ? 6 : 5} className="px-2 sm:px-4 pt-4 pb-4">
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                               <thead>
                                 <tr className="border-b text-muted-foreground text-xs uppercase tracking-wider">
-                                  <th className="text-left font-medium pb-2 pr-3">Date</th>
-                                  <th className="text-left font-medium pb-2 pr-3">Type</th>
-                                  <th className="text-right font-medium pb-2 pr-3">Amount</th>
-                                  <th className="text-left font-medium pb-2 pr-3">Method</th>
-                                  <th className="text-left font-medium pb-2 pr-3">Ref</th>
-                                  <th className="text-left font-medium pb-2 pr-3">Remarks</th>
-                                  <th className="text-right font-medium pb-2">Running</th>
-                                  {isAdmin && <th className="text-right font-medium pb-2 w-16">Actions</th>}
+                                  <th className="text-left font-medium pb-2 pr-3 w-22.5">Date</th>
+                                  <th className="text-left font-medium pb-2 pr-3 w-30">Type</th>
+                                  <th className="text-right font-medium pb-2 pr-6 whitespace-nowrap w-25">Amount</th>
+                                  <th className="text-left font-medium pb-2 pr-3 whitespace-nowrap hidden sm:table-cell w-50">Details</th>
+                                  {isAdmin && <th className="text-right font-medium pb-2 pr-3 w-17.5">Actions</th>}
                                 </tr>
                               </thead>
                               <tbody>
@@ -392,12 +387,10 @@ export default function FundLedgerPage() {
                                         Previous Month
                                       </Badge>
                                     </td>
-                                    <td className="py-2 pr-3 text-right tabular-nums font-medium">
+                                    <td className="py-2 pr-6 text-right tabular-nums font-medium whitespace-nowrap">
                                       {formatCurrency(member.openingBalance)}
                                     </td>
-                                    <td className="py-2 pr-3 text-muted-foreground">—</td>
-                                    <td className="py-2 pr-3 text-muted-foreground">—</td>
-                                    <td className="py-2 pr-3 text-muted-foreground max-w-[120px] truncate">
+                                    <td className="py-2 pr-3 text-muted-foreground max-w-50 truncate hidden sm:table-cell">
                                       {previousSheet ? (
                                         <a
                                           href={`/sheets/${previousSheet.id}`}
@@ -408,13 +401,10 @@ export default function FundLedgerPage() {
                                         </a>
                                       ) : "—"}
                                     </td>
-                                    <td className="py-2 text-right font-bold tabular-nums">
-                                      {formatCurrency(member.openingBalance)}
-                                    </td>
-                                    {isAdmin && <td className="py-2 text-right"></td>}
+                                    {isAdmin && <td className="py-2 pr-3 text-right"></td>}
                                 </tr>
                                 {member.transactions.map((tx) => (
-                                  <tr key={tx.id} className="border-b last:border-0">
+                                  <tr key={tx.id} className={`border-b last:border-0${tx.type === "Adjustment" ? " bg-muted/30" : ""}`}>
                                     <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">
                                       {formatDate(tx.date)}
                                     </td>
@@ -423,23 +413,14 @@ export default function FundLedgerPage() {
                                         {tx.type}
                                       </Badge>
                                     </td>
-                                    <td className="py-2 pr-3 text-right tabular-nums">
+                                    <td className="py-2 pr-6 text-right tabular-nums whitespace-nowrap">
                                       {formatCurrency(tx.amount)}
                                     </td>
-                                    <td className="py-2 pr-3 text-muted-foreground">
-                                      {tx.paymentMethod || "—"}
-                                    </td>
-                                    <td className="py-2 pr-3 text-muted-foreground max-w-[100px] truncate">
-                                      {tx.reference || "—"}
-                                    </td>
-                                    <td className="py-2 pr-3 text-muted-foreground max-w-[120px] truncate">
-                                      {tx.remarks || "—"}
-                                    </td>
-                                    <td className="py-2 text-right font-bold tabular-nums">
-                                      {formatCurrency(tx.runningTotal)}
+                                    <td className="py-2 pr-3 text-muted-foreground max-w-50 truncate hidden sm:table-cell">
+                                      {[tx.paymentMethod, tx.reference, tx.remarks].filter(Boolean).join(" · ") || "—"}
                                     </td>
                                     {isAdmin && (
-                                      <td className="py-2 text-right">
+                                      <td className="py-2 pr-3 text-right">
                                         <div className="flex items-center justify-end gap-1">
                                           <button
                                             type="button"
@@ -514,13 +495,12 @@ export default function FundLedgerPage() {
                   <SelectNativeItem value="Deposit">Deposit</SelectNativeItem>
                   <SelectNativeItem value="CarryForward">Carry Forward</SelectNativeItem>
                   <SelectNativeItem value="Adjustment">Adjustment</SelectNativeItem>
-                  <SelectNativeItem value="Refund">Refund</SelectNativeItem>
                 </SelectNativeContent>
               </SelectNative>
             </div>
             <div className="space-y-2">
               <Label htmlFor="add-amount">Amount</Label>
-              <Input id="add-amount" type="number" step="0.01" min="0.01" value={addAmount} onChange={(e) => setAddAmount(e.target.value)} required />
+              <Input id="add-amount" type="number" step="any" min={addType === "Adjustment" || addType === "CarryForward" ? undefined : "0.01"} value={addAmount} onChange={(e) => setAddAmount(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="add-method">Payment Method</Label>
@@ -577,13 +557,12 @@ export default function FundLedgerPage() {
                   <SelectNativeItem value="Deposit">Deposit</SelectNativeItem>
                   <SelectNativeItem value="CarryForward">Carry Forward</SelectNativeItem>
                   <SelectNativeItem value="Adjustment">Adjustment</SelectNativeItem>
-                  <SelectNativeItem value="Refund">Refund</SelectNativeItem>
                 </SelectNativeContent>
               </SelectNative>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-amount">Amount</Label>
-              <Input id="edit-amount" type="number" step="0.01" min="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} required />
+              <Input id="edit-amount" type="number" step="any" min={editType === "Adjustment" || editType === "CarryForward" ? undefined : "0.01"} value={editAmount} onChange={(e) => setEditAmount(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-method">Payment Method</Label>

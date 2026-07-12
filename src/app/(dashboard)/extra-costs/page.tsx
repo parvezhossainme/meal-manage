@@ -84,8 +84,8 @@ export default function ExtraCostsPage() {
       setFormError("Description is required")
       return
     }
-    if (isNaN(cost) || cost <= 0) {
-      setFormError("Total cost must be positive")
+    if (isNaN(cost) || cost === 0) {
+      setFormError("Total cost cannot be zero")
       return
     }
 
@@ -246,7 +246,6 @@ export default function ExtraCostsPage() {
                       id="totalCost"
                       type="number"
                       step="any"
-                      min="0"
                       className="pl-7"
                       placeholder="0.00"
                       value={totalCost}

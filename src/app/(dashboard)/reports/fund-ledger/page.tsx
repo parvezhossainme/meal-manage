@@ -108,7 +108,7 @@ export default function FundLedgerPage() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-50">
             <Select value={selectedSheet} onValueChange={(v: string | null) => { if (v) setSelectedSheet(v) }}>
               <SelectTrigger>
                 <SelectValue placeholder="All Sheets">
@@ -127,7 +127,7 @@ export default function FundLedgerPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-50">
             <Select value={selectedMember} onValueChange={(v: string | null) => { if (v) setSelectedMember(v) }}>
               <SelectTrigger>
                 <SelectValue placeholder="All Members">

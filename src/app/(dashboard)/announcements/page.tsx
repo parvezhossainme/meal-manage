@@ -86,12 +86,12 @@ export default function AnnouncementsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Announcements</h1>
           <p className="text-sm text-muted-foreground">Manage announcements shown to all users</p>
         </div>
-        <Button onClick={() => setAddOpen(true)}>
+        <Button onClick={() => setAddOpen(true)} className="shrink-0">
           <Plus className="size-4" />
           Add Announcement
         </Button>

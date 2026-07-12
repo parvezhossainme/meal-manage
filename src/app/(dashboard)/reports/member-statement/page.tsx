@@ -121,7 +121,7 @@ export default function MemberStatementPage() {
         </CardHeader>
         <CardContent>
           <Select value={selectedMember} onValueChange={(v: string | null) => { if (v) setSelectedMember(v) }}>
-            <SelectTrigger className="w-full sm:w-[300px]">
+            <SelectTrigger className="w-full sm:w-75">
               <SelectValue placeholder="Choose a member...">
                 {(value: string | null) => value ? (members.find(m => m.id === value)?.name || value) : null}
               </SelectValue>

@@ -99,7 +99,7 @@ export default function GuestReportPage() {
         </CardHeader>
         <CardContent>
           <Select value={selectedSheet} onValueChange={(v: string | null) => { if (v) setSelectedSheet(v) }}>
-            <SelectTrigger className="w-full sm:w-[300px]">
+            <SelectTrigger className="w-full sm:w-75">
               <SelectValue placeholder="All Sheets">
                 {(value: string | null) => {
                   if (!value) return null

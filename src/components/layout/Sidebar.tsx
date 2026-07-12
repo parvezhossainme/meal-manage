@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useTheme } from "@/components/theme-provider"
 import { getSheetsAction } from "@/actions/sheets"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,8 @@ import {
   ClipboardList,
   User,
   Megaphone,
+  Sun,
+  Moon,
 } from "lucide-react"
 import type { SessionUser } from "@/lib/auth"
 
@@ -77,6 +80,7 @@ interface SidebarProps {
 export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
   let items = navItems[user.role] || navItems.MEMBER
   if (user.role === "MEMBER" && user.memberId) {
     items = [
@@ -172,9 +176,21 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             })}
           </nav>
         </ScrollArea>
-        <div className="border-t border-sidebar-border p-4 text-xs text-sidebar-foreground/60">
-          <p className="truncate font-medium">{user.name}</p>
-          <p className="truncate">{user.role}</p>
+        <div className="border-t border-sidebar-border p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-sidebar-foreground/60 min-w-0">
+              <p className="truncate font-medium">{user.name}</p>
+              <p className="truncate">{user.role}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </button>
+          </div>
         </div>
       </aside>
     </>

@@ -1,20 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { getDashboardStatsAction } from "@/actions/calculations"
 import { getCurrentUserAction } from "@/actions/auth"
 import { getMemberDashboardAction } from "@/actions/public"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   PiggyBank,
   TrendingUp,
   BarChart3,
   PieChart as PieChartIcon,
-  Banknote,
   ArrowDownToLine,
   Scale,
+  Eye,
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import {
@@ -80,26 +81,14 @@ interface MemberStats {
   deposits: number
 }
 
-function GiveTakeBadge({ balance }: { balance: number }) {
+function GiveTakeInline({ balance }: { balance: number }) {
   if (balance > 0) {
-    return (
-      <Badge variant="outline" className="gap-1 border-green-300 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
-        <span className="font-bold">+ {Math.round(balance)} ৳</span>
-      </Badge>
-    )
+    return <span className="font-bold text-green-700 dark:text-green-400 whitespace-nowrap">{Math.round(balance)} ৳</span>
   }
   if (balance < 0) {
-    return (
-      <Badge variant="outline" className="gap-1 border-red-300 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400 dark:border-red-800">
-        <span className="font-bold">- {Math.round(Math.abs(balance))} ৳</span>
-      </Badge>
-    )
+    return <span className="font-bold text-red-700 dark:text-red-400 whitespace-nowrap">{Math.round(balance)} ৳</span>
   }
-  return (
-    <Badge variant="secondary" className="gap-1">
-      Settled
-    </Badge>
-  )
+  return <span className="text-muted-foreground whitespace-nowrap">0 ৳</span>
 }
 
 export default function DashboardPage() {
@@ -350,16 +339,18 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Opening Balance</CardTitle>
-            <Banknote className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data.totalOpening)}</div>
-          </CardContent>
-        </Card>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <Link
+          href="/"
+          className="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium whitespace-nowrap h-7 gap-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+        >
+          <Eye className="size-3.5" />
+          Public View
+        </Link>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Funds</CardTitle>
@@ -397,40 +388,40 @@ export default function DashboardPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="sticky top-0 px-3 py-3 text-left font-medium text-muted-foreground">Member</th>
-                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Deposit</th>
-                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Total Meals</th>
-                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Meal Cost</th>
-                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Extra Cost</th>
-                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground">Total Cost</th>
-                  <th className="sticky top-0 px-3 py-3 text-center font-medium text-muted-foreground">Give / Take</th>
+                  <th className="sticky top-0 px-3 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">Member</th>
+                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground whitespace-nowrap">Deposit</th>
+                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground whitespace-nowrap">Meals</th>
+                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground whitespace-nowrap">Meal Cost</th>
+                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground whitespace-nowrap">Extra Cost</th>
+                  <th className="sticky top-0 px-3 py-3 text-right font-medium text-muted-foreground whitespace-nowrap">Total Cost</th>
+                  <th className="sticky top-0 px-3 py-3 text-center font-medium text-muted-foreground whitespace-nowrap">Give / Take</th>
                 </tr>
               </thead>
               <tbody>
                 {data.members.map((member) => (
                   <tr key={member.memberId} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-3 font-medium">{member.memberName}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{formatCurrency(member.openingBalance + member.deposits)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{member.totalMeals.toFixed(1)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{formatCurrency(member.mealCost)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{formatCurrency(member.extraCost + member.extraCostEntries)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums font-medium">{formatCurrency(member.totalCost)}</td>
-                    <td className="px-3 py-3 text-center">
-                      <GiveTakeBadge balance={member.balance} />
+                    <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap">{formatCurrency(member.openingBalance + member.deposits)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap">{member.totalMeals.toFixed(1)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap">{formatCurrency(member.mealCost)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap text-muted-foreground">{formatCurrency(member.extraCost + member.extraCostEntries)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap font-medium">{formatCurrency(member.totalCost)}</td>
+                    <td className="px-3 py-3 text-center whitespace-nowrap">
+                      <GiveTakeInline balance={member.balance} />
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="border-t bg-muted/30 font-medium">
-                  <td className="px-3 py-3">Total</td>
-                  <td className="px-3 py-3 text-right tabular-nums">{formatCurrency(totalRow.deposits)}</td>
-                  <td className="px-3 py-3 text-right tabular-nums">{totalRow.totalMeals.toFixed(1)}</td>
-                  <td className="px-3 py-3 text-right tabular-nums">{formatCurrency(totalRow.mealCost)}</td>
-                  <td className="px-3 py-3 text-right tabular-nums">{formatCurrency(totalRow.extraCost)}</td>
-                  <td className="px-3 py-3 text-right tabular-nums">{formatCurrency(totalRow.totalCost)}</td>
-                  <td className="px-3 py-3 text-center">
-                    <GiveTakeBadge balance={totalRow.balance} />
+                  <td className="px-3 py-3 whitespace-nowrap">Total</td>
+                  <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap">{formatCurrency(totalRow.deposits)}</td>
+                  <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap">{totalRow.totalMeals.toFixed(1)}</td>
+                  <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap">{formatCurrency(totalRow.mealCost)}</td>
+                  <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap">{formatCurrency(totalRow.extraCost)}</td>
+                  <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap">{formatCurrency(totalRow.totalCost)}</td>
+                  <td className="px-3 py-3 text-center whitespace-nowrap">
+                    <GiveTakeInline balance={totalRow.balance} />
                   </td>
                 </tr>
               </tfoot>

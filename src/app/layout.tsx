@@ -3,7 +3,7 @@ import { Exo } from "next/font/google"
 import "./globals.css"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
-import { ThemeProvider } from "next-themes"
+import { ThemeProvider } from "@/components/theme-provider"
 
 const exo = Exo({
   subsets: ["latin"],

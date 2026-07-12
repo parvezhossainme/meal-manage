@@ -110,7 +110,7 @@ export default function ExpenseLedgerPage() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-50">
             <Select value={selectedSheet} onValueChange={(v: string | null) => { if (v) setSelectedSheet(v) }}>
               <SelectTrigger>
                 <SelectValue placeholder="All Sheets">
@@ -129,7 +129,7 @@ export default function ExpenseLedgerPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-50">
             <Select value={selectedCategory} onValueChange={(v: string | null) => { if (v) setSelectedCategory(v) }}>
               <SelectTrigger>
                 <SelectValue placeholder="All Categories">

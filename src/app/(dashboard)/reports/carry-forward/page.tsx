@@ -89,7 +89,7 @@ export default function CarryForwardPage() {
         </CardHeader>
         <CardContent>
           <Select value={selectedYear} onValueChange={(v: string | null) => { if (v) setSelectedYear(v) }}>
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger className="w-full sm:w-50">
               <SelectValue placeholder="Select year" />
             </SelectTrigger>
             <SelectContent>
