@@ -28,10 +28,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card"
+
 import { Plus, Pencil, Search, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -173,71 +170,69 @@ export default function MembersPage() {
         />
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
+      <div className="rounded-xl border overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead className="hidden sm:table-cell">Phone</TableHead>
+              <TableHead className="hidden md:table-cell">Email</TableHead>
+              <TableHead className="hidden sm:table-cell">Role</TableHead>
+              <TableHead>Status</TableHead>
+              {userRole === "SUPER_ADMIN" && <TableHead className="text-right">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                {userRole === "SUPER_ADMIN" && <TableHead className="text-right">Actions</TableHead>}
+                <TableCell colSpan={userRole === "SUPER_ADMIN" ? 6 : 5} className="py-8 text-center text-muted-foreground">
+                  <Loader2 className="mx-auto size-5 animate-spin" />
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 6 : 5} className="py-8 text-center text-muted-foreground">
-                    <Loader2 className="mx-auto size-5 animate-spin" />
-                  </TableCell>
-                </TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 6 : 5} className="py-8 text-center text-muted-foreground">
-                    No members found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered
-                  .filter((member) => !(userRole === "MANAGER" && member.user?.role === "SUPER_ADMIN"))
-                  .map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">{member.name}</TableCell>
-                    <TableCell>{member.phone || "—"}</TableCell>
-                    <TableCell>{member.email || "—"}</TableCell>
-                    <TableCell>
-                      {member.user ? (
-                        <Badge variant={member.user.role === "SUPER_ADMIN" ? "destructive" : member.user.role === "MANAGER" ? "default" : "secondary"}>
-                          {member.user.role === "SUPER_ADMIN" ? "Super Admin" : member.user.role === "MANAGER" ? "Manager" : "Member"}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">No account</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={member.active ? "default" : "secondary"}>
-                        {member.active ? "Active" : "Inactive"}
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={userRole === "SUPER_ADMIN" ? 6 : 5} className="py-8 text-center text-muted-foreground">
+                  No members found
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered
+                .filter((member) => !(userRole === "MANAGER" && member.user?.role === "SUPER_ADMIN"))
+                .map((member) => (
+                <TableRow key={member.id}>
+                  <TableCell className="font-medium truncate max-w-[120px] sm:max-w-none">{member.name}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{member.phone || "—"}</TableCell>
+                  <TableCell className="hidden md:table-cell">{member.email || "—"}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {member.user ? (
+                      <Badge variant={member.user.role === "SUPER_ADMIN" ? "destructive" : member.user.role === "MANAGER" ? "default" : "secondary"}>
+                        {member.user.role === "SUPER_ADMIN" ? "Super Admin" : member.user.role === "MANAGER" ? "Manager" : "Member"}
                       </Badge>
-                    </TableCell>
-                    {userRole === "SUPER_ADMIN" && (
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Switch checked={member.active} onCheckedChange={() => handleToggle(member.id)} />
-                          <Button variant="ghost" size="icon-sm" onClick={() => openEdit(member.id)}>
-                            <Pencil className="size-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No account</span>
                     )}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={member.active ? "default" : "secondary"}>
+                      {member.active ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  {userRole === "SUPER_ADMIN" && (
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Switch checked={member.active} onCheckedChange={() => handleToggle(member.id)} />
+                        <Button variant="ghost" size="icon-sm" onClick={() => openEdit(member.id)}>
+                          <Pencil className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>

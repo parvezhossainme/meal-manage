@@ -154,9 +154,18 @@ export default function DashboardPage() {
   if (userRole === "MEMBER" && memberStats) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">My Dashboard</h1>
-          <p className="text-sm text-muted-foreground">{memberStats.currentMonthLabel}</p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">My Dashboard</h1>
+            <p className="text-sm text-muted-foreground">{memberStats.currentMonthLabel}</p>
+          </div>
+          <Link
+            href="/"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium whitespace-nowrap h-7 gap-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+          >
+            <Eye className="size-3.5" />
+            Go Public Dashboard
+          </Link>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -257,7 +266,7 @@ export default function DashboardPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Member Balance</CardTitle>
+                <CardTitle className="text-sm font-medium">Balance: Give/Take</CardTitle>
                 <TrendingUp className="size-4 text-muted-foreground" />
               </CardHeader>
               <CardContent className="p-3">

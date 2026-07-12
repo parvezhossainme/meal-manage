@@ -62,6 +62,7 @@ const navItems: Record<string, NavItem[]> = {
     { href: "/settings", label: "Settings", icon: Settings },
   ],
   MEMBER: [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/sheets", label: "Meal Sheets", icon: Calendar },
     { href: "/members", label: "Members", icon: Users },
     { href: "/shopping", label: "Bazar", icon: ShoppingCart },
@@ -82,12 +83,6 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   let items = navItems[user.role] || navItems.MEMBER
-  if (user.role === "MEMBER" && user.memberId) {
-    items = [
-      { href: `/members/${user.memberId}`, label: "My Dashboard", icon: User },
-      ...items,
-    ]
-  }
   const [sheets, setSheets] = useState<Array<{ id: string; label: string }>>([])
 
   useEffect(() => {
